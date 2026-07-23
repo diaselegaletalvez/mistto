@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WeCoins & Lista de espera — Mistto</title>
+<meta name="description" content="WeCoins: o programa de fidelidade do Mistto. Ganhe pontos a cada compra e troque por desconto. Entre na lista de espera.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a href="/" class="logo">Mis<b>tto</b></a>
+    <button class="nav-toggle" onclick="toggleNav()">☰</button>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/recursos/">Recursos</a>
+      <a href="/precos/">Preços</a>
+      <a href="/wecoins/" class="active">WeCoins</a>
+      <a href="/demos/">Demos</a>
+      <a href="/docs/">Docs</a>
+      <a href="#lista" class="btn btn-gold">Entrar na lista ✦</a>
+    </div>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="wrap">
+    <span class="tag">🪙 Programa de fidelidade</span>
+    <h1>WeCoins: cada compra <span class="gold">volta pra você</span></h1>
+    <p>Pontos de fidelidade que você acumula usando o Mistto e troca por desconto na mensalidade.</p>
+  </div>
+</header>
+
+<section style="padding-top:30px">
+  <div class="wrap">
+    <div class="wecoins">
+      <div>
+        <h2>Como funciona</h2>
+        <p>Comprou tokens avulsos? Você ganha <b style="color:var(--gold)">WeCoins</b> de volta. Elas acumulam na sua conta e viram desconto direto na próxima mensalidade.</p>
+        <p>Valem em todo o ecossistema — Weblar <b>e</b> Mistto, na mesma carteira. Quanto mais alto o plano, mais WeCoins por compra (até 2×).</p>
+        <p style="font-size:.85rem">As WeCoins acumulam e expiram em 6 meses sem uso. Não são compráveis com dinheiro nem sacáveis — é fidelidade pura, sem pegadinha.</p>
+      </div>
+      <div class="coin-vis">
+        <div class="coin-row"><div class="coin-ic">1</div><div><b>Compre tokens avulsos</b><span>quando passar da cota do mês</span></div></div>
+        <div class="coin-row"><div class="coin-ic">2</div><div><b>Ganhe WeCoins de volta</b><span>com o multiplicador do seu plano</span></div></div>
+        <div class="coin-row"><div class="coin-ic">3</div><div><b>Troque por desconto</b><span>na sua próxima mensalidade</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="lista" class="cta-final">
+  <div class="wrap">
+    <span class="tag">✦ Lista de espera</span>
+    <h2 style="margin-top:18px">Seja um dos primeiros a criar<br>com a <span class="gold">Mistto</span></h2>
+    <p>Estamos nos últimos ajustes. Deixe seu e-mail e avisamos assim que abrir — com condição especial de fundador e um bônus de WeCoins de boas-vindas.</p>
+    <form class="waitlist" onsubmit="joinWaitlist(event)">
+      <input type="email" id="wl-email" placeholder="seu@email.com" required>
+      <button type="submit" class="btn btn-gold">Entrar na lista</button>
+    </form>
+    <div id="wl-msg"></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <a href="/" class="logo">Mis<b>tto</b></a>
+      <div>
+        <a href="/recursos/">Recursos</a>
+        <a href="/precos/">Preços</a>
+        <a href="/wecoins/">WeCoins</a>
+        <a href="/docs/">Docs</a>
+        <a href="mailto:contato@weblar.app.br">Contato</a>
+      </div>
+    </div>
+    <div class="fam">Mistto é um produto da família <b style="color:var(--gold)">Weblar</b> · sites sob medida &amp; criação com IA · contato@weblar.app.br</div>
+  </div>
+</footer>
+
+<script src="/script.js"></script>
+</body>
+</html>
