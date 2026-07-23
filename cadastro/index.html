@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Criar conta — Mistto</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a href="/" class="logo">Mis<b>tto</b></a>
+    <button class="nav-toggle" onclick="toggleNav()">☰</button>
+    <div class="nav-links">
+      <a href="/recursos/">Recursos</a>
+      <a href="/precos/">Preços</a>
+      <a href="/wecoins/">WeCoins</a>
+      <a href="/login/">Entrar</a>
+      <a href="/cadastro/" class="btn btn-gold active">Criar conta</a>
+    </div>
+  </div>
+</nav>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>Criar sua conta</h1>
+    <p class="subtitle">Uma conta só, vale no Mistto e no Weblar. 🌬️</p>
+    <form onsubmit="doSignup(event)">
+      <div class="field">
+        <label for="nome">Nome</label>
+        <input id="nome" type="text" placeholder="Como quer ser chamado?" required>
+      </div>
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input id="email" type="email" placeholder="seu@email.com" required>
+      </div>
+      <div class="field">
+        <label for="senha">Senha</label>
+        <input id="senha" type="password" placeholder="mínimo 6 caracteres" minlength="6" required>
+      </div>
+      <button type="submit" class="btn btn-gold">Criar conta</button>
+    </form>
+    <div id="auth-msg" class="auth-msg"></div>
+    <p class="auth-alt">Já tem conta? <a href="/login/">Entrar</a></p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/assets/auth.js"></script>
+</body>
+</html>

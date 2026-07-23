@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel — Mistto</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a href="/" class="logo">Mis<b>tto</b></a>
+    <button class="nav-toggle" onclick="toggleNav()">☰</button>
+    <div class="nav-links">
+      <a href="/precos/">Planos</a>
+      <a href="/wecoins/">WeCoins</a>
+      <a href="/docs/">Docs</a>
+      <a href="#" onclick="doLogout();return false;">Sair</a>
+    </div>
+  </div>
+</nav>
+
+<section class="painel">
+  <div class="wrap">
+    <div class="painel-head">
+      <div>
+        <h1>Olá, <span id="u-nome" class="gold">…</span> 👋</h1>
+        <p class="hi">Conectado como <span id="u-email">…</span></p>
+      </div>
+      <a href="#" class="btn btn-gold" onclick="return false">+ Criar novo site</a>
+    </div>
+
+    <div class="painel-grid">
+      <div class="stat">
+        <div class="lbl">🌬️ Seu plano</div>
+        <div class="val">Zéfiro <small>(padrão)</small></div>
+        <div class="cta"><a href="/precos/" style="color:#8a6a09;font-weight:600">Ver planos →</a></div>
+      </div>
+      <div class="stat">
+        <div class="lbl">🪙 WeCoins</div>
+        <div class="val">0</div>
+        <div class="cta" style="color:var(--muted)">Ganhe comprando tokens</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">🌐 Sites publicados</div>
+        <div class="val">0 <small>/ 1</small></div>
+        <div class="cta" style="color:var(--muted)">Seu limite no plano Zéfiro</div>
+      </div>
+    </div>
+
+    <div class="empty">
+      <h3>Você ainda não criou nenhum site <span class="soon">Editor em breve</span></h3>
+      <p>Quando o editor com IA abrir, é aqui que seus sites vão aparecer.<br>Enquanto isso, seu lugar de fundador está garantido. 🌬️</p>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/assets/auth.js"></script>
+<script>initPainel();</script>
+</body>
+</html>
