@@ -31,6 +31,8 @@ h1,h2,h3{font-family:'Fraunces',sans-serif;line-height:1.05;font-weight:700;lett
 /* ===== NAV — pílula flutuante (estilo Helium) ===== */
 nav{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:100;background:var(--ink);border-radius:999px;box-shadow:0 14px 34px rgba(13,21,32,.22);max-width:calc(100% - 32px)}
 nav .wrap{max-width:none;padding:0 8px 0 20px}
+/* sem botão CTA na pílula (páginas logadas): o "Sair" precisa de respiro à direita */
+.nav-in:not(:has(.btn)){padding-right:24px}
 .nav-in{display:flex;align-items:center;gap:22px;height:58px}
 .logo{font-family:'Fraunces',sans-serif;font-weight:700;font-size:1.4rem;letter-spacing:.3px;color:var(--cream);display:flex;align-items:center;gap:2px}
 .logo b{color:var(--gold)}
