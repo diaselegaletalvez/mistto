@@ -254,3 +254,21 @@ footer{border-top:1px solid var(--line);padding:48px 0 34px;margin-top:40px;back
 .empty{background:#fff;border:2px dashed var(--line);border-radius:22px;padding:48px 24px;text-align:center;color:var(--muted);margin-top:24px}
 .empty h3{font-size:1.3rem;color:var(--ink);margin-bottom:8px}
 .soon{display:inline-block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#8a6a09;background:rgba(212,160,23,.15);border:1px solid rgba(212,160,23,.4);padding:3px 10px;border-radius:999px;margin-left:8px}
+
+/* ===== COMPARATIVO DE PLANOS ===== */
+.cmp-wrap{overflow-x:auto;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow-sm)}
+.cmp{width:100%;border-collapse:collapse;font-size:.92rem;background:#fff;min-width:640px}
+.cmp th,.cmp td{padding:13px 16px;text-align:center;border-top:1px solid var(--line)}
+.cmp thead th{background:var(--cream2);font-family:'Fredoka';font-weight:700;font-size:1rem;border-top:none}
+.cmp thead th small{display:block;font-family:'Inter';font-weight:400;font-size:.78rem;color:var(--muted)}
+.cmp td:first-child,.cmp th:first-child{text-align:left}
+.cmp tbody td:first-child{color:var(--muted);font-weight:500}
+.cmp .yes{color:var(--gold);font-weight:700}
+.cmp .pop-col{background:rgba(212,160,23,.06)}
+.cmp tr td.pop-col{background:rgba(212,160,23,.06)}
+
+/* ===== TOKENS AVULSOS ===== */
+.tok-calc{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin:18px 0}
+.tok-calc select,.tok-calc input{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;font-family:'Inter';font-size:1rem;color:var(--ink);outline:none}
+.tok-calc select:focus{border-color:var(--gold)}
+.tok-total{font-family:'Fredoka';font-weight:700;font-size:1.3rem;color:var(--ink)}

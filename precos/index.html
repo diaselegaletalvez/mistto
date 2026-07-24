@@ -41,7 +41,7 @@
   <div class="wrap">
     <div class="plans">
 
-      <div class="plan">
+      <div class="plan" data-plano="zefiro">
         <div class="pname">Zéfiro</div>
         <div class="wind">a brisa pra começar · grátis pra sempre</div>
         <div class="price">Grátis</div>
@@ -57,7 +57,7 @@
         <a href="/cadastro/" class="btn btn-ghost">Começar grátis</a>
       </div>
 
-      <div class="plan pop">
+      <div class="plan pop" data-plano="minuano">
         <div class="pop-tag">MAIS POPULAR</div>
         <div class="pname">Minuano</div>
         <div class="wind">o favorito de quem leva a sério</div>
@@ -75,7 +75,7 @@
         <a href="#" onclick="assinar('minuano');return false;" class="btn btn-gold">Assinar Minuano</a>
       </div>
 
-      <div class="plan">
+      <div class="plan" data-plano="siroco">
         <div class="pname">Siroco</div>
         <div class="wind">pra quem cria muito</div>
         <div class="price">R$199,52<small>/mês</small></div>
@@ -92,7 +92,7 @@
         <a href="#" onclick="assinar('siroco');return false;" class="btn btn-ghost">Assinar Siroco</a>
       </div>
 
-      <div class="plan">
+      <div class="plan" data-plano="boreas">
         <div class="pname">Bóreas</div>
         <div class="wind">a força pra agências</div>
         <div class="price">R$599,52<small>/mês</small></div>
@@ -112,15 +112,63 @@
     </div>
     <p style="text-align:center;color:var(--muted);font-size:.85rem;margin-top:22px">*Uso justo (fair use). Planos anuais com desconto chegando no lançamento.</p>
 
-    <div class="wecoins" style="margin-top:60px">
-      <div>
-        <span class="tag">🎟️ Tokens avulsos</span>
-        <h2 style="margin-top:16px">Passou da cota? <br>Sem problema.</h2>
-        <p>Compre um pacote de tokens avulsos a qualquer momento, em qualquer plano. Eles <b style="color:var(--text)">não expiram na virada do mês</b> — e cada compra ainda te rende WeCoins de fidelidade.</p>
+    <!-- Comparativo completo -->
+    <div style="margin-top:72px">
+      <div class="sec-head" style="margin-bottom:24px">
+        <h2>Compare os <span class="gold">planos</span></h2>
+        <p>Tudo lado a lado, sem letrinha miúda.</p>
       </div>
-      <div class="coin-vis">
-        <div class="coin-row"><div class="coin-ic">＋</div><div><b>Pacote de 5.000 tokens</b><span>R$49 · disponível em todos os planos</span></div></div>
-        <div class="coin-row"><div class="coin-ic">🪙</div><div><b>Rende WeCoins</b><span>com o multiplicador do seu plano</span></div></div>
+      <div class="cmp-wrap">
+        <table class="cmp">
+          <thead>
+            <tr>
+              <th>Recurso</th>
+              <th>Zéfiro<small>Grátis</small></th>
+              <th class="pop-col">Minuano<small>R$74,52/mês</small></th>
+              <th>Siroco<small>R$199,52/mês</small></th>
+              <th>Bóreas<small>R$599,52/mês</small></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Tokens de IA/mês</td><td>500</td><td class="pop-col">9.900</td><td>30.000</td><td>150.000</td></tr>
+            <tr><td>Sites publicados</td><td>1</td><td class="pop-col">3</td><td>10</td><td>Ilimitado*</td></tr>
+            <tr><td>Subdomínio .weblar.app.br</td><td class="yes">✓</td><td class="pop-col yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>Domínio próprio</td><td>—</td><td class="pop-col">1</td><td>3</td><td>Ilimitados</td></tr>
+            <tr><td>Templates</td><td>Básicos</td><td class="pop-col">Premium</td><td>Premium</td><td>Premium</td></tr>
+            <tr><td>Remove selo "Feito com Weblar"</td><td>—</td><td class="pop-col yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>Histórico de versões</td><td>7 dias</td><td class="pop-col">30 dias</td><td>90 dias</td><td>Ilimitado</td></tr>
+            <tr><td>Analytics</td><td>—</td><td class="pop-col">Básico</td><td>Avançado</td><td>Avançado</td></tr>
+            <tr><td>Multi-idioma + exportar código</td><td>—</td><td class="pop-col">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>Formulários + webhook</td><td>—</td><td class="pop-col">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>IA prioritária</td><td>—</td><td class="pop-col yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>White-label + equipe</td><td>—</td><td class="pop-col">—</td><td>—</td><td class="yes">✓</td></tr>
+            <tr><td>Multiplicador de WeCoins</td><td>1×</td><td class="pop-col">1×</td><td>1,5×</td><td>2×</td></tr>
+            <tr><td>Suporte</td><td>E-mail</td><td class="pop-col">Prioritário</td><td>Chat</td><td>Dedicado</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="text-align:center;color:var(--muted);font-size:.82rem;margin-top:14px">*Uso justo (fair use). Planos anuais com desconto chegando no lançamento.</p>
+    </div>
+
+    <!-- Tokens avulsos -->
+    <div class="wecoins" style="margin-top:64px">
+      <div>
+        <span class="tag">Tokens avulsos</span>
+        <h2 style="margin-top:16px">Passou da cota?<br>Compre mais quando quiser.</h2>
+        <p>Funcionam em qualquer plano, <b style="color:var(--ink)">não expiram na virada do mês</b> e ainda rendem WeCoins de fidelidade.</p>
+        <p style="font-size:.85rem">Quanto cada token rende depende do que você pede pra IA — um site simples gasta pouco, um mais elaborado gasta mais.*</p>
+      </div>
+      <div>
+        <div class="tok-calc">
+          <select id="tok-pack" onchange="calcTokens()">
+            <option data-preco="49" data-id="tokens_5k">5.000 tokens</option>
+            <option data-preco="89" data-id="tokens_10k">10.000 tokens</option>
+            <option data-preco="199" data-id="tokens_25k">25.000 tokens</option>
+          </select>
+          <span class="tok-total" id="tok-total">R$49</span>
+        </div>
+        <a href="#" onclick="comprarTokens();return false;" class="btn btn-gold" style="width:100%;justify-content:center">Comprar tokens</a>
+        <p style="font-size:.78rem;color:var(--muted);text-align:center;margin-top:10px">*O crédito entra na conta assim que o pagamento é confirmado.</p>
       </div>
     </div>
   </div>

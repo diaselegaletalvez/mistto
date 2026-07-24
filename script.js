@@ -63,6 +63,62 @@ function assinar(plano){
   });
 }
 
+/* ---- Estados dos planos (atual / upgrade / downgrade) ---- */
+var ORDEM_PLANOS = ['zefiro','minuano','siroco','boreas'];
+async function updatePlanos(){
+  var cards = document.querySelectorAll('.plan[data-plano]');
+  if(!cards.length) return;
+  try{
+    if(!db) db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    var { data: { session } } = await db.auth.getSession();
+    if(!session) return; // deslogado: botões padrão do HTML
+    var atual = 'zefiro';
+    var { data: sub } = await db.from('subscriptions').select('plano,status,valid_until').eq('user_id', session.user.id).maybeSingle();
+    if(sub && sub.status === 'active' && sub.valid_until && new Date(sub.valid_until) > new Date()) atual = sub.plano;
+    var iAtual = ORDEM_PLANOS.indexOf(atual);
+    cards.forEach(function(card){
+      var plano = card.getAttribute('data-plano');
+      var i = ORDEM_PLANOS.indexOf(plano);
+      var btn = card.querySelector('.btn');
+      if(!btn) return;
+      var nome = card.querySelector('.pname') ? card.querySelector('.pname').textContent : plano;
+      if(i === iAtual){
+        btn.textContent = 'Plano atual';
+        btn.className = 'btn btn-ghost';
+        btn.style.opacity = '.55';
+        btn.style.pointerEvents = 'none';
+        btn.onclick = function(){ return false; };
+        btn.removeAttribute('href');
+      } else if(i < iAtual){
+        btn.textContent = 'Fazer downgrade';
+        btn.className = 'btn btn-ghost';
+        btn.style.opacity = '.8';
+        btn.href = '#';
+        btn.onclick = function(){ alert('Pra baixar de plano, deixe o atual expirar ou fale com a gente: contato@weblar.app.br'); return false; };
+      } else {
+        btn.textContent = 'Assinar ' + nome;
+        btn.className = 'btn ' + (card.classList.contains('pop') ? 'btn-gold' : 'btn-ghost');
+        btn.href = '#';
+        btn.onclick = (function(p){ return function(){ assinar(p); return false; }; })(plano);
+      }
+    });
+  }catch(e){}
+}
+
+/* ---- Calculadora de tokens avulsos ---- */
+function calcTokens(){
+  var sel = document.getElementById('tok-pack');
+  var out = document.getElementById('tok-total');
+  if(!sel || !out) return;
+  var op = sel.options[sel.selectedIndex];
+  out.textContent = 'R$' + op.getAttribute('data-preco');
+}
+function comprarTokens(){
+  var sel = document.getElementById('tok-pack');
+  if(!sel) return;
+  assinar(sel.options[sel.selectedIndex].getAttribute('data-id'));
+}
+
 /* ---- Chips do prompt (home) ---- */
 document.addEventListener('DOMContentLoaded', function(){
   document.querySelectorAll('.chip').forEach(function(c){
@@ -78,8 +134,9 @@ document.addEventListener('DOMContentLoaded', function(){
       t.focus();
     });
   });
-  // checa login pra ajustar o nav
-  loadSupabase(updateNav);
+  // checa login pra ajustar nav e planos
+  loadSupabase(function(){ updateNav(); updatePlanos(); });
+  calcTokens();
 });
 
 /* ---- Lista de espera ---- */
