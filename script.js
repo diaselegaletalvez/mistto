@@ -118,7 +118,7 @@ function comprarTokens(){
   checkout({ tokens: q });
 }
 
-/* ---- Criar site (home) → /create se logado, senão cadastro ---- */
+/* ---- Criar site (home): /create se logado, senão cadastro ---- */
 function criarSite(){
   var ta = document.querySelector('.prompt-box textarea');
   var p = ta ? ta.value.trim() : '';
@@ -171,12 +171,12 @@ async function joinWaitlist(e){
     });
     if(res.ok){
       msg.style.color = 'var(--green)';
-      msg.textContent = '✓ Pronto! Guardamos ' + email + ' na lista. Avisaremos você em primeira mão. 🌬️';
+      msg.textContent = '✓ Pronto! Guardamos ' + email + ' na lista. Avisaremos você em primeira mão.';
       document.getElementById('wl-email').value = '';
     } else {
       var t = await res.text();
       msg.style.color = '#d9534f';
-      msg.textContent = (t.indexOf('duplicate')>-1) ? 'Esse e-mail já está na lista 😉' : 'Ops, tente de novo em instantes.';
+      msg.textContent = (t.indexOf('duplicate')>-1) ? 'Esse e-mail já está na lista' : 'Ops, tente de novo em instantes.';
     }
   }catch(err){
     msg.style.color = '#d9534f';
