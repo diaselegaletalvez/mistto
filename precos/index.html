@@ -160,13 +160,11 @@
       </div>
       <div>
         <div class="tok-calc">
-          <select id="tok-pack" onchange="calcTokens()">
-            <option data-preco="49" data-id="tokens_5k">5.000 tokens</option>
-            <option data-preco="89" data-id="tokens_10k">10.000 tokens</option>
-            <option data-preco="199" data-id="tokens_25k">25.000 tokens</option>
-          </select>
-          <span class="tok-total" id="tok-total">R$49</span>
+          <input id="tok-qty" type="number" min="1000" step="500" value="5000" oninput="calcTokens()" style="width:140px;text-align:center">
+          <span style="color:var(--muted)">tokens</span>
+          <span class="tok-total" id="tok-total">R$50,00</span>
         </div>
+        <p style="font-size:.78rem;color:var(--muted);text-align:center;margin-top:8px">1 token = R$0,01 · mínimo 1.000</p>
         <a href="#" onclick="comprarTokens();return false;" class="btn btn-gold" style="width:100%;justify-content:center">Comprar tokens</a>
         <p style="font-size:.78rem;color:var(--muted);text-align:center;margin-top:10px">*O crédito entra na conta assim que o pagamento é confirmado.</p>
       </div>

@@ -77,26 +77,30 @@ async function initPainel(){
 }
 
 /* ---- Comprar plano / tokens (a partir do painel) ---- */
-async function assinar(plano){
+async function checkout(payload){
   try{
     var { data: { session } } = await db.auth.getSession();
     if(!session){ location.href = '/cadastro/'; return; }
+    payload.access_token = session.access_token;
     var res = await fetch(SUPABASE_URL + '/functions/v1/create-order', {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
-      body: JSON.stringify({ plano: plano, access_token: session.access_token })
+      body: JSON.stringify(payload)
     });
     var data = await res.json();
-    if(data.url){ location.href = data.url; } else { alert('Não consegui iniciar o pagamento agora. Tente de novo.'); }
+    if(data.url){ location.href = data.url; } else { alert(data.msg || 'Não consegui iniciar o pagamento agora. Tente de novo.'); }
   }catch(e){ alert('Ops, algo deu errado. Tente de novo.'); }
 }
+function assinar(plano){ checkout({ plano: plano }); }
 function comprarTokens(){
-  var s = document.getElementById('tok-pack');
-  if(s) assinar(s.options[s.selectedIndex].getAttribute('data-id'));
+  var inp = document.getElementById('tok-qty');
+  var q = inp ? parseInt(inp.value, 10) || 0 : 0;
+  if(q < 1000){ alert('O mínimo é 1.000 tokens (R$10,00).'); return; }
+  checkout({ tokens: q });
 }
 function calcTokens(){
-  var s = document.getElementById('tok-pack'), o = document.getElementById('tok-total');
-  if(s && o) o.textContent = 'R$' + s.options[s.selectedIndex].getAttribute('data-preco');
+  var inp = document.getElementById('tok-qty'), o = document.getElementById('tok-total');
+  if(inp && o){ var q = parseInt(inp.value, 10) || 0; o.textContent = 'R$' + (q/100).toFixed(2).replace('.', ','); }
 }
 
 /* ---- Página /create (protegida) ---- */
@@ -113,7 +117,37 @@ async function initCreate(){
     });
   });
 }
-function gerarSite(){
+async function gerarSite(){
+  var ta = document.getElementById('create-prompt');
+  var prompt = ta ? ta.value.trim() : '';
+  if(!prompt){ alert('Descreva o site que você quer criar.'); return; }
   var st = document.getElementById('create-status');
-  if(st){ st.style.display = 'block'; st.scrollIntoView({ behavior:'smooth', block:'center' }); }
+  var box = document.getElementById('create-result');
+  if(st){ st.style.display='block'; st.style.color='var(--muted)'; st.textContent='Gerando seu site… leva alguns segundos.'; }
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    if(!session){ location.href = '/login/'; return; }
+    var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
+      body: JSON.stringify({ prompt: prompt, access_token: session.access_token })
+    });
+    var data = await res.json();
+    if(data.id){
+      if(st) st.style.display='none';
+      if(box){
+        box.style.display='block';
+        box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">'
+          + '<b>Prontinho! Seu site:</b><span>'
+          + '<a class="btn btn-ghost" href="/s/?id='+data.id+'" target="_blank" style="padding:9px 18px">Abrir em nova aba</a> '
+          + '<button class="btn btn-gold" onclick="gerarSite()" style="padding:9px 18px">Regenerar</button></span></div>'
+          + '<iframe src="/s/?id='+data.id+'" style="width:100%;height:520px;border:1px solid var(--line);border-radius:16px;background:#fff"></iframe>';
+        box.scrollIntoView({ behavior:'smooth', block:'start' });
+      }
+    } else if(data.error === 'limite'){
+      if(st){ st.style.color='#d9534f'; st.textContent = data.msg || 'Limite do plano grátis atingido. Assine pra criar mais.'; }
+    } else {
+      if(st){ st.style.color='#d9534f'; st.textContent = 'Não consegui gerar agora. Tente de novo em instantes.'; }
+    }
+  }catch(e){ if(st){ st.style.color='#d9534f'; st.textContent = 'Erro ao gerar. Tente de novo.'; } }
 }

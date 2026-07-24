@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Site — Mistto</title>
+<style>body{margin:0;font-family:system-ui,sans-serif}#load{display:flex;height:100vh;align-items:center;justify-content:center;color:#8a99ad}</style>
+</head>
+<body>
+<div id="load">Carregando…</div>
+<script>
+const SB_URL = "https://unsvccbzrrgnvzvdwwrz.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVuc3ZjY2J6cnJnbnZ6dmR3d3J6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0MzE0OTUsImV4cCI6MjEwMDAwNzQ5NX0.LI121gkIHkiplDTcolv6e6is6LxN0I1Ebmil5tJKRxY";
+(async function(){
+  var id = new URLSearchParams(location.search).get('id');
+  if(!id){ document.getElementById('load').textContent = 'Site não encontrado.'; return; }
+  try{
+    var res = await fetch(SB_URL + '/rest/v1/sites?id=eq.' + encodeURIComponent(id) + '&select=html', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    var rows = await res.json();
+    if(!rows || !rows.length || !rows[0].html){ document.getElementById('load').textContent = 'Site não encontrado.'; return; }
+    document.open(); document.write(rows[0].html); document.close();
+  }catch(e){ document.getElementById('load').textContent = 'Erro ao carregar.'; }
+})();
+</script>
+</body>
+</html>

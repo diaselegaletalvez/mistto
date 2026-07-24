@@ -41,27 +41,25 @@ async function updateNav(){
 }
 
 /* ---- Assinar um plano (InfinitePay) ---- */
-function assinar(plano){
+function checkout(payload){
   loadSupabase(async function(){
     try{
       if(!db) db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       var { data: { session } } = await db.auth.getSession();
       if(!session){ location.href = '/cadastro/'; return; } // precisa ter conta
+      payload.access_token = session.access_token;
       var res = await fetch(SUPABASE_URL + '/functions/v1/create-order', {
         method: 'POST',
-        headers: {
-          'Content-Type':'application/json',
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization':'Bearer ' + session.access_token
-        },
-        body: JSON.stringify({ plano: plano, access_token: session.access_token })
+        headers: { 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
+        body: JSON.stringify(payload)
       });
       var data = await res.json();
       if(data.url){ location.href = data.url; }
-      else { alert('Não consegui iniciar o pagamento agora. Tente de novo em instantes.'); }
+      else { alert(data.msg || 'Não consegui iniciar o pagamento agora. Tente de novo em instantes.'); }
     }catch(e){ alert('Ops, algo deu errado. Tente de novo.'); }
   });
 }
+function assinar(plano){ checkout({ plano: plano }); }
 
 /* ---- Estados dos planos (atual / upgrade / downgrade) ---- */
 var ORDEM_PLANOS = ['zefiro','minuano','siroco','boreas'];
@@ -107,16 +105,17 @@ async function updatePlanos(){
 
 /* ---- Calculadora de tokens avulsos ---- */
 function calcTokens(){
-  var sel = document.getElementById('tok-pack');
+  var inp = document.getElementById('tok-qty');
   var out = document.getElementById('tok-total');
-  if(!sel || !out) return;
-  var op = sel.options[sel.selectedIndex];
-  out.textContent = 'R$' + op.getAttribute('data-preco');
+  if(!inp || !out) return;
+  var q = parseInt(inp.value, 10) || 0;
+  out.textContent = 'R$' + (q/100).toFixed(2).replace('.', ',');
 }
 function comprarTokens(){
-  var sel = document.getElementById('tok-pack');
-  if(!sel) return;
-  assinar(sel.options[sel.selectedIndex].getAttribute('data-id'));
+  var inp = document.getElementById('tok-qty');
+  var q = inp ? parseInt(inp.value, 10) || 0 : 0;
+  if(q < 1000){ alert('O mínimo é 1.000 tokens (R$10,00).'); return; }
+  checkout({ tokens: q });
 }
 
 /* ---- Criar site (home) → /create se logado, senão cadastro ---- */
