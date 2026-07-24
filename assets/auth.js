@@ -92,7 +92,7 @@ async function initPainel(){
 
   // lista os sites do usuário (com ações: ver / tirar do ar / apagar)
   try{
-    var { data: meus } = await db.from('sites').select('id,prompt,created_at,published').eq('user_id', u.id).order('created_at', { ascending:false });
+    var { data: meus } = await db.from('mistto_sites').select('id,prompt,created_at,published').eq('user_id', u.id).order('created_at', { ascending:false });
     var area = document.getElementById('sites-area');
     if(area && meus && meus.length){
       var bs = 'padding:7px 14px;font-size:.82rem';
@@ -124,12 +124,12 @@ function irCriar(){
 
 /* ---- Gestão dos sites ---- */
 async function toggleSite(id, pub){
-  try{ await db.from('sites').update({ published: !pub }).eq('id', id); location.reload(); }
+  try{ await db.from('mistto_sites').update({ published: !pub }).eq('id', id); location.reload(); }
   catch(e){ alert('Não consegui mudar o status agora.'); }
 }
 async function apagarSite(id){
   if(!confirm('Apagar este site de vez? Essa ação não tem volta.')) return;
-  try{ await db.from('sites').delete().eq('id', id); location.reload(); }
+  try{ await db.from('mistto_sites').delete().eq('id', id); location.reload(); }
   catch(e){ alert('Não consegui apagar agora.'); }
 }
 
@@ -199,9 +199,20 @@ async function gerarSite(){
     } else if(data.error === 'limite'){
       if(st){ st.style.color='#d9534f'; st.textContent = data.msg || 'Limite do plano grátis atingido. Assine pra criar mais.'; }
     } else {
-      if(st){ st.style.color='#d9534f'; st.textContent = 'Não consegui gerar agora. Tente de novo em instantes.'; }
+      if(st){ st.style.color='#d9534f'; st.textContent = traduzGerar(data, res.status); }
     }
   }catch(e){ if(st){ st.style.color='#d9534f'; st.textContent = 'Erro ao gerar. Tente de novo.'; } }
+}
+
+/* traduz o erro da function gerar-site pra algo acionável */
+function traduzGerar(data, status){
+  var e = data && (data.error || '');
+  if(e === 'ia_sem_resposta') return 'A IA não respondeu' + (data.detail ? ' — ' + data.detail : '') + '. Tente outro provedor no seletor.';
+  if(e === 'db') return 'Erro ao salvar o site. A tabela existe? Rode o mistto-tudo.sql. (' + (data.detail || '') + ')';
+  if(e === 'precisa estar logado') return 'Sua sessão expirou. Entre de novo.';
+  if(e === 'prompt vazio') return 'Descreva o site que você quer criar.';
+  if(status === 404) return 'A função gerar-site não foi encontrada. Falta deployar? (supabase functions deploy gerar-site --no-verify-jwt)';
+  return 'Não consegui gerar agora (' + (data.detail || e || status) + ').';
 }
 
 /* ===================== EDITOR (chat + preview) ===================== */
@@ -249,7 +260,7 @@ async function initEditor(){
   var box = document.getElementById('ed-msgs');
   if(box) box.innerHTML = '';
   try{
-    var { data: site } = await db.from('sites').select('id,prompt,slug,published,user_id').eq('id', id).maybeSingle();
+    var { data: site } = await db.from('mistto_sites').select('id,prompt,slug,published,user_id').eq('id', id).maybeSingle();
     if(!site || site.user_id !== session.user.id){
       edAddMsg('Não encontrei esse site na sua conta.', 'err');
       return;
@@ -338,7 +349,7 @@ async function togglePub(){
   if(!EDITOR.id) return;
   var novo = !EDITOR.publicado;
   try{
-    await db.from('sites').update({ published: novo }).eq('id', EDITOR.id);
+    await db.from('mistto_sites').update({ published: novo }).eq('id', EDITOR.id);
     EDITOR.publicado = novo;
     atualizaBtnPub();
     edAddMsg(novo ? 'Seu site voltou pro ar.' : 'Tirei seu site do ar. Só você consegue vê-lo agora.', 'ai');

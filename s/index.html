@@ -15,7 +15,7 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
   var id = new URLSearchParams(location.search).get('id');
   if(!id){ document.getElementById('load').textContent = 'Site não encontrado.'; return; }
   try{
-    var res = await fetch(SB_URL + '/rest/v1/sites?id=eq.' + encodeURIComponent(id) + '&select=html', {
+    var res = await fetch(SB_URL + '/rest/v1/mistto_sites?id=eq.' + encodeURIComponent(id) + '&select=html', {
       headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
     });
     var rows = await res.json();
