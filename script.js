@@ -119,6 +119,21 @@ function comprarTokens(){
   assinar(sel.options[sel.selectedIndex].getAttribute('data-id'));
 }
 
+/* ---- Criar site (home) → /create se logado, senão cadastro ---- */
+function criarSite(){
+  var ta = document.querySelector('.prompt-box textarea');
+  var p = ta ? ta.value.trim() : '';
+  loadSupabase(async function(){
+    try{
+      if(!db) db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      var { data: { session } } = await db.auth.getSession();
+      var dest = session ? '/create/' : '/cadastro/';
+      if(p) dest += '?p=' + encodeURIComponent(p);
+      location.href = dest;
+    }catch(e){ location.href = '/cadastro/'; }
+  });
+}
+
 /* ---- Chips do prompt (home) ---- */
 document.addEventListener('DOMContentLoaded', function(){
   document.querySelectorAll('.chip').forEach(function(c){

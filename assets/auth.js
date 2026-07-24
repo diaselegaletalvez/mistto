@@ -98,3 +98,22 @@ function calcTokens(){
   var s = document.getElementById('tok-pack'), o = document.getElementById('tok-total');
   if(s && o) o.textContent = 'R$' + s.options[s.selectedIndex].getAttribute('data-preco');
 }
+
+/* ---- Página /create (protegida) ---- */
+async function initCreate(){
+  var { data: { session } } = await db.auth.getSession();
+  if(!session){ location.href = '/login/'; return; }
+  var p = new URLSearchParams(location.search).get('p');
+  var ta = document.getElementById('create-prompt');
+  if(ta && p){ ta.value = p; }
+  document.querySelectorAll('#create-chips .chip').forEach(function(c){
+    c.addEventListener('click', function(){
+      var t = document.getElementById('create-prompt');
+      if(t){ t.value = c.getAttribute('data-prompt') || c.textContent; t.focus(); }
+    });
+  });
+}
+function gerarSite(){
+  var st = document.getElementById('create-status');
+  if(st){ st.style.display = 'block'; st.scrollIntoView({ behavior:'smooth', block:'center' }); }
+}

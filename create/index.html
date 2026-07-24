@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Criar site — Mistto</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a href="/" class="logo">Mis<b>tto</b></a>
+    <button class="nav-toggle" onclick="toggleNav()">☰</button>
+    <div class="nav-links">
+      <a href="/painel/">Painel</a>
+      <a href="/precos/">Planos</a>
+      <a href="/docs/">Docs</a>
+      <a href="#" onclick="doLogout();return false;">Sair</a>
+    </div>
+  </div>
+</nav>
+
+<div class="auth-wrap" style="align-items:flex-start;padding-top:130px">
+  <div style="width:100%;max-width:680px;position:relative;z-index:2">
+    <div style="text-align:center;margin-bottom:26px">
+      <span class="tag">Novo site</span>
+      <h1 style="font-size:2.6rem;margin-top:14px">O que vamos <span class="gold">criar</span> hoje?</h1>
+      <p style="color:var(--muted);margin-top:10px">Descreva seu site em português normal. Quanto mais detalhe, melhor.</p>
+    </div>
+
+    <div class="prompt-box" style="max-width:none">
+      <textarea id="create-prompt" placeholder="Ex: um site pra minha cafeteria, com cardápio, galeria de fotos e um botão de WhatsApp. Tom aconchegante, cores quentes." rows="4"></textarea>
+      <div class="prompt-row">
+        <div class="prompt-chips" id="create-chips">
+          <span class="chip" data-prompt="Um site pra minha cafeteria, com cardápio, fotos e botão de WhatsApp. Tom aconchegante.">Cafeteria</span>
+          <span class="chip" data-prompt="Um portfólio elegante e minimalista pra mostrar meus trabalhos de design.">Portfólio</span>
+          <span class="chip" data-prompt="Um site de personal trainer, com planos, depoimentos e agendamento.">Personal</span>
+          <span class="chip" data-prompt="Uma landing pra meu evento, com programação, palestrantes e inscrição.">Evento</span>
+        </div>
+        <button onclick="gerarSite()" class="btn btn-gold">Gerar com a Mistto</button>
+      </div>
+    </div>
+
+    <div id="create-status" style="display:none;margin-top:22px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px;text-align:center;box-shadow:var(--shadow-sm)">
+      <h3 style="font-size:1.3rem;margin-bottom:8px">O editor com IA está chegando <span class="soon">em breve</span></h3>
+      <p style="color:var(--muted)">Guardamos sua ideia. Como fundador, você vai ser um dos primeiros a gerar site de verdade quando o editor abrir. Enquanto isso, dá pra acompanhar tudo no seu painel.</p>
+      <a href="/painel/" class="btn btn-ghost" style="margin-top:18px">Voltar pro painel</a>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/assets/auth.js"></script>
+<script>initCreate();</script>
+</body>
+</html>
