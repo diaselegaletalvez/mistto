@@ -141,9 +141,9 @@ document.addEventListener('DOMContentLoaded', function(){
       var t = document.querySelector('.prompt-box textarea');
       if(!t) return;
       var map = {
-        '☕ Cafeteria':'Quero um site pra minha cafeteria, com cardápio, fotos e botão de WhatsApp.',
-        '💼 Portfólio':'Quero um portfólio pra mostrar meus trabalhos de design, elegante e minimalista.',
-        '🏋️ Personal':'Quero um site de personal trainer, com planos, depoimentos e agendamento.'
+        'Cafeteria':'Quero um site pra minha cafeteria, com cardápio, fotos e botão de WhatsApp.',
+        'Portfólio':'Quero um portfólio pra mostrar meus trabalhos de design, elegante e minimalista.',
+        'Personal':'Quero um site de personal trainer, com planos, depoimentos e agendamento.'
       };
       t.value = map[c.textContent.trim()] || '';
       t.focus();

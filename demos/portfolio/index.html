@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Nara — demo feito com a Mistto</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;background:#0e0e12;color:#ececef;line-height:1.6}
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif;letter-spacing:-.5px}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 22px}
+  .ribbon{background:#16161d;color:#a9a9b8;text-align:center;font-size:.82rem;padding:8px;border-bottom:1px solid #24242e}
+  .ribbon a{color:#c9a227;font-weight:600;text-decoration:none}
+  nav{display:flex;justify-content:space-between;align-items:center;padding:22px 0}
+  .brand{font-family:'Space Grotesk';font-weight:700;font-size:1.3rem}
+  nav a{color:#a9a9b8;text-decoration:none;margin-left:22px;font-size:.95rem}
+  .hero{padding:70px 0 40px}
+  .hero h1{font-size:4rem;line-height:1.02}
+  .hero h1 span{color:#c9a227}
+  .hero p{color:#a9a9b8;font-size:1.15rem;max-width:520px;margin-top:18px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:30px 0 60px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr 1fr}}
+  .card{aspect-ratio:1;border-radius:18px;display:flex;align-items:flex-end;padding:18px;font-family:'Space Grotesk';font-weight:600;color:#fff}
+  .c1{background:linear-gradient(135deg,#6d5bd0,#2a2140)}
+  .c2{background:linear-gradient(135deg,#c9a227,#5c4a10)}
+  .c3{background:linear-gradient(135deg,#2e9e7a,#123a2c)}
+  .c4{background:linear-gradient(135deg,#d0566b,#3a1220)}
+  .c5{background:linear-gradient(135deg,#4b8fd0,#12283a)}
+  .c6{background:linear-gradient(135deg,#8a8a97,#2a2a33)}
+  footer{border-top:1px solid #24242e;padding:40px 0;text-align:center;color:#a9a9b8}
+  .btn{display:inline-block;background:#c9a227;color:#141205;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="ribbon">Demo feito com a <a href="https://mistto.weblar.app.br">Mistto</a> — crie o seu em minutos.</div>
+<div class="wrap">
+  <nav>
+    <span class="brand">Studio Nara</span>
+    <span><a href="#work">Trabalhos</a><a href="#sobre">Sobre</a><a href="#contato">Contato</a></span>
+  </nav>
+  <div class="hero">
+    <h1>Design que<br><span>conta histórias.</span></h1>
+    <p>Identidade visual, branding e direção de arte pra marcas que querem ser lembradas.</p>
+  </div>
+</div>
+
+<div class="wrap" id="work">
+  <div class="grid">
+    <div class="card c1">Marca — Lumo</div>
+    <div class="card c2">Embalagem — Doce Sul</div>
+    <div class="card c3">Site — Verde Vivo</div>
+    <div class="card c4">Campanha — Reveló</div>
+    <div class="card c5">App — Onda</div>
+    <div class="card c6">Editorial — Prisma</div>
+  </div>
+</div>
+
+<footer id="contato">
+  <div class="wrap">
+    <h2 style="font-size:1.6rem;color:#ececef">Vamos criar algo juntos?</h2>
+    <a href="#" class="btn">Falar com a Nara</a>
+  </div>
+</footer>
+</body>
+</html>

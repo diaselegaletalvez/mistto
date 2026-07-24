@@ -31,7 +31,7 @@
 
 <header class="page-head">
   <div class="wrap">
-    <span class="tag">🪙 Programa de fidelidade</span>
+    <span class="tag">Programa de fidelidade</span>
     <h1>WeCoins: cada compra <span class="gold">volta pra você</span></h1>
     <p>Pontos de fidelidade que você acumula usando o Mistto e troca por desconto na mensalidade.</p>
   </div>
@@ -55,14 +55,51 @@
   </div>
 </section>
 
-<section id="lista" class="cta-final">
+<section>
   <div class="wrap">
-    <span class="tag">✦ Lista de espera</span>
-    <h2 style="margin-top:18px">Seja um dos primeiros a criar<br>com a <span class="gold">Mistto</span></h2>
-    <p>Estamos nos últimos ajustes. Deixe seu e-mail e avisamos assim que abrir — com condição especial de fundador e um bônus de WeCoins de boas-vindas.</p>
+    <div class="sec-head">
+      <h2>Na <span class="gold">prática</span></h2>
+      <p>Como as WeCoins entram na sua conta e viram economia.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><h3>Você compra</h3><p>Um pacote de tokens avulsos pra dar aquele gás quando a cota do mês acaba.</p></div>
+      <div class="step"><div class="n">2</div><h3>Ganha de volta</h3><p>Uma parte volta em WeCoins, com o multiplicador do seu plano (até 2×).</p></div>
+      <div class="step"><div class="n">3</div><h3>Economiza</h3><p>As WeCoins viram desconto direto na sua próxima mensalidade.</p></div>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--card);border-top:1px solid var(--line)">
+  <div class="wrap">
+    <div class="wecoins" style="background:linear-gradient(135deg,var(--cream2),#fff)">
+      <div>
+        <span class="tag">Tokens avulsos</span>
+        <h2 style="margin-top:14px">Compre tokens e<br>acumule WeCoins</h2>
+        <p>Funciona em qualquer plano e não expira na virada do mês. Cada compra rende WeCoins.</p>
+      </div>
+      <div>
+        <div class="tok-calc">
+          <select id="tok-pack" onchange="calcTokens()">
+            <option data-preco="49" data-id="tokens_5k">5.000 tokens</option>
+            <option data-preco="89" data-id="tokens_10k">10.000 tokens</option>
+            <option data-preco="199" data-id="tokens_25k">25.000 tokens</option>
+          </select>
+          <span class="tok-total" id="tok-total">R$49</span>
+        </div>
+        <a href="#" onclick="comprarTokens();return false;" class="btn btn-gold" style="width:100%;justify-content:center">Comprar tokens</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-final">
+  <div class="wrap">
+    <span class="tag">Newsletter</span>
+    <h2 style="margin-top:18px">Novidades do <span class="gold">Mistto</span></h2>
+    <p>Dicas de site, novidades do produto e promoções de tokens direto no seu e-mail. Sem spam.</p>
     <form class="waitlist" onsubmit="joinWaitlist(event)">
       <input type="email" id="wl-email" placeholder="seu@email.com" required>
-      <button type="submit" class="btn btn-gold">Entrar na lista</button>
+      <button type="submit" class="btn btn-gold">Assinar newsletter</button>
     </form>
     <div id="wl-msg"></div>
   </div>
