@@ -224,6 +224,15 @@ function edRefresh(){
   if(f && EDITOR.id){ f.src = '/s/?id=' + EDITOR.id + '&t=' + Date.now(); }
 }
 
+/* salva uma mensagem do chat (não bloqueia a interface) */
+async function edSalvar(role, content){
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    if(!session || !EDITOR.id) return;
+    await db.from('site_messages').insert({ site_id: EDITOR.id, user_id: session.user.id, role: role, content: content });
+  }catch(e){}
+}
+
 async function initEditor(){
   var { data: { session } } = await db.auth.getSession();
   if(!session){ location.href = '/login/'; return; }
@@ -247,12 +256,18 @@ async function initEditor(){
     }
     EDITOR.slug = site.slug;
     EDITOR.publicado = site.published !== false;
-    // primeira "conversa": o pedido original + resposta da Mistto
-    if(site.prompt){ edAddMsg(site.prompt, 'user'); }
-    if(qs.get('novo')){
-      edAddMsg('Prontinho! Montei seu site. Me diga o que quer mudar e eu ajusto na hora.', 'ai');
+    // carrega o histórico salvo; se ainda não houver, semeia com o pedido original + saudação
+    var { data: msgs } = await db.from('site_messages').select('role,content').eq('site_id', id).order('created_at', { ascending: true });
+    if(msgs && msgs.length){
+      msgs.forEach(function(m){ edAddMsg(m.content, m.role === 'user' ? 'user' : 'ai'); });
     } else {
-      edAddMsg('Aqui está seu site. Me diga o que quer mudar e eu ajusto.', 'ai');
+      var saud = qs.get('novo')
+        ? 'Prontinho! Montei seu site. Me diga o que quer mudar e eu ajusto na hora.'
+        : 'Aqui está seu site. Me diga o que quer mudar e eu ajusto.';
+      var seed = [];
+      if(site.prompt){ edAddMsg(site.prompt, 'user'); seed.push({ site_id:id, user_id:session.user.id, role:'user', content:site.prompt }); }
+      edAddMsg(saud, 'ai'); seed.push({ site_id:id, user_id:session.user.id, role:'assistant', content:saud });
+      try{ await db.from('site_messages').insert(seed); }catch(e){}
     }
   }catch(e){ edAddMsg('Não consegui carregar os dados do site agora.', 'err'); }
 
@@ -283,6 +298,7 @@ async function enviarEdicao(){
   var loading = document.getElementById('ed-loading');
 
   edAddMsg(instr, 'user');
+  edSalvar('user', instr);
   ta.value = '';
   var pensando = edAddMsg('<span class="ed-typing"><span></span><span></span><span></span></span>', 'ai');
   if(btn){ btn.disabled = true; }
@@ -298,7 +314,9 @@ async function enviarEdicao(){
     });
     var data = await res.json();
     if(data.id){
-      if(pensando){ pensando.innerHTML = '<span class="who">Mistto</span>Feito! Atualizei a prévia ao lado.'; }
+      var okMsg = 'Feito! Atualizei a prévia ao lado.';
+      if(pensando){ pensando.innerHTML = '<span class="who">Mistto</span>' + okMsg; }
+      edSalvar('assistant', okMsg);
       edRefresh();
     } else {
       if(pensando){ pensando.className = 'msg err'; pensando.textContent = data.msg || 'Não consegui aplicar agora. Tente de novo em instantes.'; }
