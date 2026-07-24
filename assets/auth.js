@@ -174,34 +174,18 @@ async function initCreate(){
     });
   });
 }
+/* /create só COLETA (nome + descrição) e leva pro chat, que conduz a conversa */
 async function gerarSite(){
   var ta = document.getElementById('create-prompt');
   var prompt = ta ? ta.value.trim() : '';
-  if(!prompt){ alert('Descreva o site que você quer criar.'); return; }
+  if(!prompt){ alert('Conta pra Mistto o que você quer criar (mesmo que só uma ideia).'); return; }
+  var nomeEl = document.getElementById('create-nome');
+  var nome = nomeEl ? nomeEl.value.trim() : '';
+  var provEl = document.getElementById('create-provider');
+  var provider = provEl ? provEl.value : 'gemini';
   var st = document.getElementById('create-status');
-  var box = document.getElementById('create-result');
-  if(st){ st.style.display='block'; st.style.color='var(--muted)'; st.textContent='Gerando seu site… leva alguns segundos.'; }
-  try{
-    var { data: { session } } = await db.auth.getSession();
-    if(!session){ location.href = '/login/'; return; }
-    var provEl = document.getElementById('create-provider');
-    var provider = provEl ? provEl.value : 'gemini';
-    var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
-      body: JSON.stringify({ prompt: prompt, provider: provider, access_token: session.access_token })
-    });
-    var data = await res.json();
-    if(data.id){
-      if(st){ st.style.color='var(--muted)'; st.textContent='Pronto! Abrindo o editor…'; }
-      // vai pra tela de chat + preview pra continuar editando
-      location.href = '/editor/?id=' + data.id + '&prov=' + provider + '&novo=1';
-    } else if(data.error === 'limite'){
-      if(st){ st.style.color='#d9534f'; st.textContent = data.msg || 'Limite do plano grátis atingido. Assine pra criar mais.'; }
-    } else {
-      if(st){ st.style.color='#d9534f'; st.textContent = traduzGerar(data, res.status); }
-    }
-  }catch(e){ if(st){ st.style.color='#d9534f'; st.textContent = 'Erro ao gerar. Tente de novo.'; } }
+  if(st){ st.style.display='block'; st.style.color='var(--muted)'; st.textContent='Abrindo o chat…'; }
+  location.href = '/editor/?novo=1&nome=' + encodeURIComponent(nome) + '&desc=' + encodeURIComponent(prompt) + '&prov=' + provider;
 }
 
 /* traduz o erro da function gerar-site pra algo acionável */
@@ -216,8 +200,11 @@ function traduzGerar(data, status){
 }
 
 /* ===================== EDITOR (chat + preview) ===================== */
-var EDITOR = { id:null, slug:null, publicado:true };
+var EDITOR = { id:null, slug:null, publicado:true, fase:'edicao', nome:'', provider:'gemini', msgs:[] };
 
+function escapeHtml(s){
+  return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; });
+}
 function edAddMsg(texto, tipo){
   var box = document.getElementById('ed-msgs');
   if(!box) return null;
@@ -229,13 +216,14 @@ function edAddMsg(texto, tipo){
   box.scrollTop = box.scrollHeight;
   return d;
 }
-
+/* bolha "digitando" da Mistto */
+function edPensando(){
+  return edAddMsg('<span class="ed-typing"><span></span><span></span><span></span></span>', 'ai');
+}
 function edRefresh(){
   var f = document.getElementById('ed-frame');
   if(f && EDITOR.id){ f.src = '/s/?id=' + EDITOR.id + '&t=' + Date.now(); }
 }
-
-/* salva uma mensagem do chat (não bloqueia a interface) */
 async function edSalvar(role, content){
   try{
     var { data: { session } } = await db.auth.getSession();
@@ -248,26 +236,47 @@ async function initEditor(){
   var { data: { session } } = await db.auth.getSession();
   if(!session){ location.href = '/login/'; return; }
   var qs = new URLSearchParams(location.search);
-  var id = qs.get('id');
-  if(!id){ location.href = '/create/'; return; }
-  EDITOR.id = id;
 
   var prov = qs.get('prov');
   var sel = document.getElementById('ed-provider');
   if(sel && ['gemini','groq','cerebras','openrouter'].indexOf(prov) !== -1) sel.value = prov;
+  EDITOR.provider = sel ? sel.value : (prov || 'gemini');
+  if(sel){ sel.addEventListener('change', function(){ EDITOR.provider = sel.value; }); }
 
-  // carrega dados do site (dono só) pra montar cabeçalho + estado de publicação
   var box = document.getElementById('ed-msgs');
   if(box) box.innerHTML = '';
+
+  // Enter envia (Shift+Enter quebra linha)
+  var ta = document.getElementById('ed-prompt');
+  if(ta){ ta.addEventListener('keydown', function(ev){
+    if(ev.key === 'Enter' && !ev.shiftKey){ ev.preventDefault(); enviarEdicao(); }
+  }); }
+
+  var id = qs.get('id');
+  if(id){ return initEditorExistente(session, id, qs); }
+
+  // ---------- MODO NOVO: entrevista → geração ----------
+  var desc = qs.get('desc') || '';
+  if(!desc){ location.href = '/create/'; return; }
+  EDITOR.fase = 'entrevista';
+  EDITOR.nome = qs.get('nome') || '';
+  EDITOR.msgs = [{ role:'user', content: desc }];
+  var url = document.getElementById('ed-url'); if(url) url.textContent = EDITOR.nome || 'novo site';
+  var pb = document.getElementById('ed-pub'); if(pb) pb.style.display = 'none';
+  var ob = document.getElementById('ed-open'); if(ob) ob.style.display = 'none';
+  if(EDITOR.nome) edAddMsg('Projeto: ' + EDITOR.nome, 'user');
+  edAddMsg(desc, 'user');
+  entrevistaPasso();
+}
+
+/* abre um site que já existe (edição) */
+async function initEditorExistente(session, id, qs){
+  EDITOR.id = id; EDITOR.fase = 'edicao';
   try{
     var { data: site } = await db.from('mistto_sites').select('id,prompt,slug,published,user_id').eq('id', id).maybeSingle();
-    if(!site || site.user_id !== session.user.id){
-      edAddMsg('Não encontrei esse site na sua conta.', 'err');
-      return;
-    }
+    if(!site || site.user_id !== session.user.id){ edAddMsg('Não encontrei esse site na sua conta.', 'err'); return; }
     EDITOR.slug = site.slug;
     EDITOR.publicado = site.published !== false;
-    // carrega o histórico salvo; se ainda não houver, semeia com o pedido original + saudação
     var { data: msgs } = await db.from('site_messages').select('role,content').eq('site_id', id).order('created_at', { ascending: true });
     if(msgs && msgs.length){
       msgs.forEach(function(m){ edAddMsg(m.content, m.role === 'user' ? 'user' : 'ai'); });
@@ -281,37 +290,110 @@ async function initEditor(){
       try{ await db.from('site_messages').insert(seed); }catch(e){}
     }
   }catch(e){ edAddMsg('Não consegui carregar os dados do site agora.', 'err'); }
-
-  // preview + botões
   edRefresh();
-  var open = document.getElementById('ed-open');
-  if(open) open.href = '/s/?id=' + EDITOR.id;
-  var url = document.getElementById('ed-url');
-  if(url && EDITOR.slug) url.textContent = 'mistto.weblar.app.br/s/' + EDITOR.slug;
+  var open = document.getElementById('ed-open'); if(open){ open.href = '/s/?id=' + EDITOR.id; open.style.display = ''; }
+  var url = document.getElementById('ed-url'); if(url && EDITOR.slug) url.textContent = 'mistto.weblar.app.br/s/' + EDITOR.slug;
+  var pb = document.getElementById('ed-pub'); if(pb) pb.style.display = '';
   atualizaBtnPub();
+}
 
-  // Enter envia (Shift+Enter quebra linha)
-  var ta = document.getElementById('ed-prompt');
-  if(ta){ ta.addEventListener('keydown', function(ev){
-    if(ev.key === 'Enter' && !ev.shiftKey){ ev.preventDefault(); enviarEdicao(); }
-  }); }
+/* um passo da entrevista: pergunta a próxima coisa OU decide gerar */
+async function entrevistaPasso(){
+  var btn = document.getElementById('ed-send'); if(btn) btn.disabled = true;
+  var pensando = edPensando();
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    if(!session){ location.href = '/login/'; return; }
+    var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
+      body: JSON.stringify({ entrevista:true, nome:EDITOR.nome, messages:EDITOR.msgs, provider:EDITOR.provider, access_token:session.access_token })
+    });
+    var data = await res.json();
+    if(data.pronto){
+      var m1 = 'Perfeito! Vou montar seu site agora — leva alguns segundos.';
+      if(pensando){ pensando.innerHTML = '<span class="who">Mistto</span>' + m1; }
+      EDITOR.msgs.push({ role:'assistant', content:m1 });
+      gerarDoResumo(data.resumo);
+    } else if(data.pergunta){
+      if(pensando){ pensando.innerHTML = '<span class="who">Mistto</span>' + escapeHtml(data.pergunta); }
+      EDITOR.msgs.push({ role:'assistant', content:data.pergunta });
+      if(btn) btn.disabled = false;
+      var i = document.getElementById('ed-prompt'); if(i) i.focus();
+    } else {
+      if(pensando){ pensando.className = 'msg err'; pensando.textContent = traduzGerar(data, res.status); }
+      if(btn) btn.disabled = false;
+    }
+  }catch(e){
+    if(pensando){ pensando.className = 'msg err'; pensando.textContent = 'Erro na conversa. Tente de novo.'; }
+    if(btn) btn.disabled = false;
+  }
+}
+
+/* com o resumo pronto, gera o site de fato e entra no modo edição */
+async function gerarDoResumo(resumo){
+  EDITOR.fase = 'gerando';
+  var loading = document.getElementById('ed-loading'); if(loading) loading.style.display = 'flex';
+  var btn = document.getElementById('ed-send'); if(btn) btn.disabled = true;
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    if(!session){ location.href = '/login/'; return; }
+    var prompt = resumo + (EDITOR.nome ? ('\n\nNome do projeto: ' + EDITOR.nome) : '');
+    var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
+      body: JSON.stringify({ prompt: prompt, provider:EDITOR.provider, access_token:session.access_token })
+    });
+    var data = await res.json();
+    if(data.id){
+      EDITOR.id = data.id; EDITOR.slug = data.slug; EDITOR.fase = 'edicao'; EDITOR.publicado = true;
+      var okMsg = 'Pronto! Seu site está aí do lado. Agora é só me dizer o que quer ajustar.';
+      var seed = EDITOR.msgs.map(function(m){ return { site_id:EDITOR.id, user_id:session.user.id, role:m.role, content:m.content }; });
+      seed.push({ site_id:EDITOR.id, user_id:session.user.id, role:'assistant', content:okMsg });
+      try{ await db.from('site_messages').insert(seed); }catch(e){}
+      edAddMsg(okMsg, 'ai');
+      edRefresh();
+      var open = document.getElementById('ed-open'); if(open){ open.href = '/s/?id=' + EDITOR.id; open.style.display = ''; }
+      var url = document.getElementById('ed-url'); if(url) url.textContent = 'mistto.weblar.app.br/s/' + EDITOR.slug;
+      var pb = document.getElementById('ed-pub'); if(pb){ pb.style.display = ''; atualizaBtnPub(); }
+    } else if(data.error === 'limite'){
+      EDITOR.fase = 'entrevista';
+      edAddMsg(data.msg || 'Você atingiu o limite do plano grátis (1 site). Assine pra criar mais.', 'err');
+    } else {
+      EDITOR.fase = 'entrevista';
+      edAddMsg(traduzGerar(data, res.status), 'err');
+    }
+  }catch(e){ EDITOR.fase = 'entrevista'; edAddMsg('Erro ao montar o site. Tente de novo.', 'err'); }
+  finally{
+    var l = document.getElementById('ed-loading'); if(l) l.style.display = 'none';
+    var b = document.getElementById('ed-send'); if(b) b.disabled = false;
+  }
 }
 
 async function enviarEdicao(){
   var ta = document.getElementById('ed-prompt');
   var instr = ta ? ta.value.trim() : '';
   if(!instr){ return; }
-  if(!EDITOR.id){ return; }
 
+  // fase de entrevista: cada envio é uma resposta às perguntas da Mistto
+  if(EDITOR.fase === 'entrevista'){
+    edAddMsg(instr, 'user');
+    EDITOR.msgs.push({ role:'user', content:instr });
+    ta.value = '';
+    entrevistaPasso();
+    return;
+  }
+  if(EDITOR.fase === 'gerando'){ return; }        // já está montando, ignora
+
+  // fase de edição: o site já existe, cada envio é uma alteração
+  if(!EDITOR.id){ return; }
   var btn = document.getElementById('ed-send');
-  var provEl = document.getElementById('ed-provider');
-  var provider = provEl ? provEl.value : 'gemini';
   var loading = document.getElementById('ed-loading');
 
   edAddMsg(instr, 'user');
   edSalvar('user', instr);
   ta.value = '';
-  var pensando = edAddMsg('<span class="ed-typing"><span></span><span></span><span></span></span>', 'ai');
+  var pensando = edPensando();
   if(btn){ btn.disabled = true; }
   if(loading){ loading.style.display = 'flex'; }
 
@@ -321,7 +403,7 @@ async function enviarEdicao(){
     var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
-      body: JSON.stringify({ site_id: EDITOR.id, prompt: instr, provider: provider, access_token: session.access_token })
+      body: JSON.stringify({ site_id: EDITOR.id, prompt: instr, provider: EDITOR.provider, access_token: session.access_token })
     });
     var data = await res.json();
     if(data.id){
@@ -330,7 +412,7 @@ async function enviarEdicao(){
       edSalvar('assistant', okMsg);
       edRefresh();
     } else {
-      if(pensando){ pensando.className = 'msg err'; pensando.textContent = data.msg || 'Não consegui aplicar agora. Tente de novo em instantes.'; }
+      if(pensando){ pensando.className = 'msg err'; pensando.textContent = traduzGerar(data, res.status); }
     }
   }catch(e){
     if(pensando){ pensando.className = 'msg err'; pensando.textContent = 'Erro ao aplicar a mudança. Tente de novo.'; }
