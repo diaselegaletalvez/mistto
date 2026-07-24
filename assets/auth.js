@@ -171,20 +171,136 @@ async function gerarSite(){
     });
     var data = await res.json();
     if(data.id){
-      if(st) st.style.display='none';
-      if(box){
-        box.style.display='block';
-        box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">'
-          + '<b>Prontinho! Seu site:</b><span>'
-          + '<a class="btn btn-ghost" href="/s/?id='+data.id+'" target="_blank" style="padding:9px 18px">Abrir em nova aba</a> '
-          + '<button class="btn btn-gold" onclick="gerarSite()" style="padding:9px 18px">Regenerar</button></span></div>'
-          + '<iframe src="/s/?id='+data.id+'" style="width:100%;height:520px;border:1px solid var(--line);border-radius:16px;background:#fff"></iframe>';
-        box.scrollIntoView({ behavior:'smooth', block:'start' });
-      }
+      if(st){ st.style.color='var(--muted)'; st.textContent='Pronto! Abrindo o editor…'; }
+      // vai pra tela de chat + preview pra continuar editando
+      location.href = '/editor/?id=' + data.id + '&prov=' + provider + '&novo=1';
     } else if(data.error === 'limite'){
       if(st){ st.style.color='#d9534f'; st.textContent = data.msg || 'Limite do plano grátis atingido. Assine pra criar mais.'; }
     } else {
       if(st){ st.style.color='#d9534f'; st.textContent = 'Não consegui gerar agora. Tente de novo em instantes.'; }
     }
   }catch(e){ if(st){ st.style.color='#d9534f'; st.textContent = 'Erro ao gerar. Tente de novo.'; } }
+}
+
+/* ===================== EDITOR (chat + preview) ===================== */
+var EDITOR = { id:null, slug:null, publicado:true };
+
+function edAddMsg(texto, tipo){
+  var box = document.getElementById('ed-msgs');
+  if(!box) return null;
+  var d = document.createElement('div');
+  d.className = 'msg ' + (tipo || 'ai');
+  if(tipo === 'ai'){ d.innerHTML = '<span class="who">Mistto</span>' + texto; }
+  else { d.textContent = texto; }
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+  return d;
+}
+
+function edRefresh(){
+  var f = document.getElementById('ed-frame');
+  if(f && EDITOR.id){ f.src = '/s/?id=' + EDITOR.id + '&t=' + Date.now(); }
+}
+
+async function initEditor(){
+  var { data: { session } } = await db.auth.getSession();
+  if(!session){ location.href = '/login/'; return; }
+  var qs = new URLSearchParams(location.search);
+  var id = qs.get('id');
+  if(!id){ location.href = '/create/'; return; }
+  EDITOR.id = id;
+
+  var prov = qs.get('prov');
+  var sel = document.getElementById('ed-provider');
+  if(sel && ['gemini','groq','cerebras','openrouter'].indexOf(prov) !== -1) sel.value = prov;
+
+  // carrega dados do site (dono só) pra montar cabeçalho + estado de publicação
+  var box = document.getElementById('ed-msgs');
+  if(box) box.innerHTML = '';
+  try{
+    var { data: site } = await db.from('sites').select('id,prompt,slug,published,user_id').eq('id', id).maybeSingle();
+    if(!site || site.user_id !== session.user.id){
+      edAddMsg('Não encontrei esse site na sua conta.', 'err');
+      return;
+    }
+    EDITOR.slug = site.slug;
+    EDITOR.publicado = site.published !== false;
+    // primeira "conversa": o pedido original + resposta da Mistto
+    if(site.prompt){ edAddMsg(site.prompt, 'user'); }
+    if(qs.get('novo')){
+      edAddMsg('Prontinho! Montei seu site. Me diga o que quer mudar e eu ajusto na hora.', 'ai');
+    } else {
+      edAddMsg('Aqui está seu site. Me diga o que quer mudar e eu ajusto.', 'ai');
+    }
+  }catch(e){ edAddMsg('Não consegui carregar os dados do site agora.', 'err'); }
+
+  // preview + botões
+  edRefresh();
+  var open = document.getElementById('ed-open');
+  if(open) open.href = '/s/?id=' + EDITOR.id;
+  var url = document.getElementById('ed-url');
+  if(url && EDITOR.slug) url.textContent = 'mistto.weblar.app.br/s/' + EDITOR.slug;
+  atualizaBtnPub();
+
+  // Enter envia (Shift+Enter quebra linha)
+  var ta = document.getElementById('ed-prompt');
+  if(ta){ ta.addEventListener('keydown', function(ev){
+    if(ev.key === 'Enter' && !ev.shiftKey){ ev.preventDefault(); enviarEdicao(); }
+  }); }
+}
+
+async function enviarEdicao(){
+  var ta = document.getElementById('ed-prompt');
+  var instr = ta ? ta.value.trim() : '';
+  if(!instr){ return; }
+  if(!EDITOR.id){ return; }
+
+  var btn = document.getElementById('ed-send');
+  var provEl = document.getElementById('ed-provider');
+  var provider = provEl ? provEl.value : 'gemini';
+  var loading = document.getElementById('ed-loading');
+
+  edAddMsg(instr, 'user');
+  ta.value = '';
+  var pensando = edAddMsg('<span class="ed-typing"><span></span><span></span><span></span></span>', 'ai');
+  if(btn){ btn.disabled = true; }
+  if(loading){ loading.style.display = 'flex'; }
+
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    if(!session){ location.href = '/login/'; return; }
+    var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
+      body: JSON.stringify({ site_id: EDITOR.id, prompt: instr, provider: provider, access_token: session.access_token })
+    });
+    var data = await res.json();
+    if(data.id){
+      if(pensando){ pensando.innerHTML = '<span class="who">Mistto</span>Feito! Atualizei a prévia ao lado.'; }
+      edRefresh();
+    } else {
+      if(pensando){ pensando.className = 'msg err'; pensando.textContent = data.msg || 'Não consegui aplicar agora. Tente de novo em instantes.'; }
+    }
+  }catch(e){
+    if(pensando){ pensando.className = 'msg err'; pensando.textContent = 'Erro ao aplicar a mudança. Tente de novo.'; }
+  }finally{
+    if(btn){ btn.disabled = false; }
+    if(loading){ loading.style.display = 'none'; }
+  }
+}
+
+function atualizaBtnPub(){
+  var b = document.getElementById('ed-pub');
+  if(!b) return;
+  b.textContent = EDITOR.publicado ? 'Tirar do ar' : 'Publicar';
+}
+async function togglePub(){
+  if(!EDITOR.id) return;
+  var novo = !EDITOR.publicado;
+  try{
+    await db.from('sites').update({ published: novo }).eq('id', EDITOR.id);
+    EDITOR.publicado = novo;
+    atualizaBtnPub();
+    edAddMsg(novo ? 'Seu site voltou pro ar.' : 'Tirei seu site do ar. Só você consegue vê-lo agora.', 'ai');
+  }catch(e){ edAddMsg('Não consegui mudar o status agora.', 'err'); }
 }

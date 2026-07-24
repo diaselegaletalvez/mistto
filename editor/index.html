@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editor — Mistto</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body class="ed-body">
+
+<div class="ed">
+  <!-- COLUNA DA ESQUERDA: CHAT -->
+  <aside class="ed-chat">
+    <header class="ed-chat-top">
+      <a href="/painel/" class="logo">Mis<b>tto</b></a>
+      <a href="/painel/" class="ed-back">Painel</a>
+    </header>
+
+    <div class="ed-msgs" id="ed-msgs">
+      <div class="msg ai"><span class="who">Mistto</span>Carregando seu site…</div>
+    </div>
+
+    <div class="ed-input">
+      <textarea id="ed-prompt" rows="2" placeholder="Peça uma mudança. Ex: troca a cor pra azul, adiciona uma seção de depoimentos, muda o texto do topo…"></textarea>
+      <div class="ed-input-row">
+        <select id="ed-provider">
+          <option value="gemini">IA: Gemini</option>
+          <option value="groq">IA: Groq</option>
+          <option value="cerebras">IA: Cerebras</option>
+          <option value="openrouter">IA: OpenRouter</option>
+        </select>
+        <button id="ed-send" class="btn btn-gold" onclick="enviarEdicao()">Enviar</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- COLUNA DA DIREITA: PREVIEW -->
+  <main class="ed-preview">
+    <div class="ed-bar">
+      <div class="ed-dots"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+      <div class="ed-url" id="ed-url">mistto.weblar.app.br/s/…</div>
+      <div class="ed-bar-actions">
+        <button class="btn btn-ghost ed-mini" id="ed-pub" onclick="togglePub()">Publicar</button>
+        <a class="btn btn-ghost ed-mini" id="ed-open" href="#" target="_blank" rel="noopener">Abrir</a>
+      </div>
+    </div>
+    <div class="ed-frame-wrap">
+      <iframe id="ed-frame" title="Prévia do site"></iframe>
+      <div class="ed-loading" id="ed-loading" style="display:none">
+        <div class="ed-spin"></div>
+        <p>A Mistto está aplicando sua mudança…</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/assets/auth.js"></script>
+<script>initEditor();</script>
+</body>
+</html>
