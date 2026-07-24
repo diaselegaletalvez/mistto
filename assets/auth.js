@@ -75,22 +75,40 @@ async function initPainel(){
   var elC = document.getElementById('p-cota');
   if(elC) elC.textContent = (COTAS[planoAtual] || 500).toLocaleString('pt-BR');
 
-  // lista os sites do usuário
+  // lista os sites do usuário (com ações: ver / tirar do ar / apagar)
   try{
-    var { data: meus } = await db.from('sites').select('id,prompt,created_at').eq('user_id', u.id).order('created_at', { ascending:false });
+    var { data: meus } = await db.from('sites').select('id,prompt,created_at,published').eq('user_id', u.id).order('created_at', { ascending:false });
     var area = document.getElementById('sites-area');
     if(area && meus && meus.length){
+      var bs = 'padding:7px 14px;font-size:.82rem';
       var h = '<div class="gallery">';
       meus.forEach(function(s){
         var t = (s.prompt || 'Site sem descrição').replace(/[<>]/g,'').slice(0,70);
-        h += '<a class="demo-card" href="/s/?id=' + s.id + '" target="_blank" rel="noopener">'
+        var pub = s.published !== false;
+        h += '<div class="demo-card">'
           + '<div class="demo-thumb" style="background:linear-gradient(135deg,#EFC03A,#B5860F);color:#251a02">Mistto</div>'
-          + '<div class="info"><h3>Seu site</h3><p>' + t + '</p></div></a>';
+          + '<div class="info"><h3>Seu site ' + (pub ? '' : '<span class="soon">fora do ar</span>') + '</h3><p>' + t + '</p>'
+          + '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">'
+          + '<a class="btn btn-ghost" style="' + bs + '" href="/s/?id=' + s.id + '" target="_blank" rel="noopener">Ver</a>'
+          + '<button class="btn btn-ghost" style="' + bs + '" onclick="toggleSite(\'' + s.id + '\',' + pub + ')">' + (pub ? 'Tirar do ar' : 'Publicar') + '</button>'
+          + '<button class="btn btn-ghost" style="' + bs + ';color:#d9534f;border-color:#d9534f" onclick="apagarSite(\'' + s.id + '\')">Apagar</button>'
+          + '</div></div></div>';
       });
       h += '</div>';
       area.innerHTML = h;
     }
   }catch(e){}
+}
+
+/* ---- Gestão dos sites ---- */
+async function toggleSite(id, pub){
+  try{ await db.from('sites').update({ published: !pub }).eq('id', id); location.reload(); }
+  catch(e){ alert('Não consegui mudar o status agora.'); }
+}
+async function apagarSite(id){
+  if(!confirm('Apagar este site de vez? Essa ação não tem volta.')) return;
+  try{ await db.from('sites').delete().eq('id', id); location.reload(); }
+  catch(e){ alert('Não consegui apagar agora.'); }
 }
 
 /* ---- Comprar plano / tokens (a partir do painel) ---- */
