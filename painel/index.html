@@ -27,33 +27,56 @@
   <div class="wrap">
     <div class="painel-head">
       <div>
-        <h1>Olá, <span id="u-nome" class="gold">…</span> 👋</h1>
+        <h1>Olá, <span id="u-nome" class="gold">…</span></h1>
         <p class="hi">Conectado como <span id="u-email">…</span></p>
       </div>
-      <a href="#" class="btn btn-gold" onclick="return false">+ Criar novo site</a>
+      <a href="/create/" class="btn btn-gold">+ Criar novo site</a>
     </div>
 
     <div class="painel-grid">
       <div class="stat">
-        <div class="lbl">🌬️ Seu plano</div>
-        <div class="val" id="p-plano">Zéfiro <small>(padrão)</small></div>
-        <div class="cta" id="p-validade"><a href="/precos/" style="color:#8a6a09;font-weight:600">Fazer upgrade →</a></div>
+        <div class="lbl">Seu plano</div>
+        <div class="val" id="p-plano">Zéfiro <small>(grátis)</small></div>
+        <div class="cta" id="p-validade"><a href="/precos/" style="color:#8a6a09;font-weight:600">Fazer upgrade</a></div>
       </div>
       <div class="stat">
-        <div class="lbl">🪙 WeCoins</div>
-        <div class="val">0</div>
-        <div class="cta" style="color:var(--muted)">Ganhe comprando tokens</div>
+        <div class="lbl">Tokens do mês</div>
+        <div class="val"><span id="p-usados">0</span> <small>/ <span id="p-cota">500</span></small></div>
+        <div class="cta" style="color:var(--muted)">Resetam no início do mês</div>
       </div>
       <div class="stat">
-        <div class="lbl">🌐 Sites publicados</div>
-        <div class="val">0 <small>/ 1</small></div>
-        <div class="cta" style="color:var(--muted)">Seu limite no plano Zéfiro</div>
+        <div class="lbl">WeCoins</div>
+        <div class="val" id="p-wecoins">0</div>
+        <div class="cta"><a href="/wecoins/" style="color:#8a6a09;font-weight:600">Como funciona</a></div>
       </div>
     </div>
 
+    <!-- Comprar tokens avulsos -->
+    <div class="wecoins" style="margin-top:26px">
+      <div>
+        <span class="tag">Tokens avulsos</span>
+        <h2 style="margin-top:14px">Precisa de mais tokens?</h2>
+        <p>Compre um pacote quando quiser — não expira na virada do mês e ainda rende WeCoins de fidelidade.</p>
+      </div>
+      <div>
+        <div class="tok-calc">
+          <select id="tok-pack" onchange="calcTokens()">
+            <option data-preco="49" data-id="tokens_5k">5.000 tokens</option>
+            <option data-preco="89" data-id="tokens_10k">10.000 tokens</option>
+            <option data-preco="199" data-id="tokens_25k">25.000 tokens</option>
+          </select>
+          <span class="tok-total" id="tok-total">R$49</span>
+        </div>
+        <a href="#" onclick="comprarTokens();return false;" class="btn btn-gold" style="width:100%;justify-content:center">Comprar tokens</a>
+      </div>
+    </div>
+
+    <!-- Meus sites -->
+    <h2 style="font-size:1.5rem;margin:40px 0 16px">Meus sites</h2>
     <div class="empty">
       <h3>Você ainda não criou nenhum site <span class="soon">Editor em breve</span></h3>
-      <p>Quando o editor com IA abrir, é aqui que seus sites vão aparecer.<br>Enquanto isso, seu lugar de fundador está garantido. 🌬️</p>
+      <p>Descreva o que você quer e a Mistto monta pra você.<br>Seu lugar de fundador está garantido.</p>
+      <a href="/create/" class="btn btn-gold" style="margin-top:18px">Criar meu primeiro site</a>
     </div>
   </div>
 </section>

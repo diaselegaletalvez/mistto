@@ -58,10 +58,13 @@ async function initPainel(){
   var nome = (u.user_metadata && u.user_metadata.nome) || u.email.split('@')[0];
   var elN = document.getElementById('u-nome'); if(elN) elN.textContent = nome;
   var elE = document.getElementById('u-email'); if(elE) elE.textContent = u.email;
-  // lê a assinatura ativa (se houver)
+  // lê a assinatura ativa (se houver) e ajusta plano + cota de tokens
+  var COTAS = { zefiro:500, minuano:9900, siroco:30000, boreas:150000 };
+  var planoAtual = 'zefiro';
   try{
     var { data: sub } = await db.from('subscriptions').select('*').eq('user_id', u.id).maybeSingle();
     if(sub && sub.status === 'active' && sub.valid_until && new Date(sub.valid_until) > new Date()){
+      planoAtual = sub.plano;
       var nomes = { zefiro:'Zéfiro', minuano:'Minuano', siroco:'Siroco', boreas:'Bóreas' };
       var elP = document.getElementById('p-plano');
       if(elP) elP.textContent = nomes[sub.plano] || sub.plano;
@@ -69,4 +72,29 @@ async function initPainel(){
       if(elV) elV.innerHTML = 'Ativo até ' + new Date(sub.valid_until).toLocaleDateString('pt-BR');
     }
   }catch(e){}
+  var elC = document.getElementById('p-cota');
+  if(elC) elC.textContent = (COTAS[planoAtual] || 500).toLocaleString('pt-BR');
+}
+
+/* ---- Comprar plano / tokens (a partir do painel) ---- */
+async function assinar(plano){
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    if(!session){ location.href = '/cadastro/'; return; }
+    var res = await fetch(SUPABASE_URL + '/functions/v1/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
+      body: JSON.stringify({ plano: plano, access_token: session.access_token })
+    });
+    var data = await res.json();
+    if(data.url){ location.href = data.url; } else { alert('Não consegui iniciar o pagamento agora. Tente de novo.'); }
+  }catch(e){ alert('Ops, algo deu errado. Tente de novo.'); }
+}
+function comprarTokens(){
+  var s = document.getElementById('tok-pack');
+  if(s) assinar(s.options[s.selectedIndex].getAttribute('data-id'));
+}
+function calcTokens(){
+  var s = document.getElementById('tok-pack'), o = document.getElementById('tok-total');
+  if(s && o) o.textContent = 'R$' + s.options[s.selectedIndex].getAttribute('data-preco');
 }
