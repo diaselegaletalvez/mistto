@@ -40,7 +40,13 @@
           <span class="chip" data-prompt="Um site de personal trainer, com planos, depoimentos e agendamento.">Personal</span>
           <span class="chip" data-prompt="Uma landing pra meu evento, com programação, palestrantes e inscrição.">Evento</span>
         </div>
-        <button onclick="gerarSite()" class="btn btn-gold">Gerar com a Mistto</button>
+        <span style="display:flex;gap:8px;align-items:center">
+          <select id="create-provider" style="background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:11px 14px;font-family:'Inter';color:var(--ink);outline:none">
+            <option value="gemini">IA: Gemini</option>
+            <option value="groq">IA: Groq</option>
+          </select>
+          <button onclick="gerarSite()" class="btn btn-gold">Gerar com a Mistto</button>
+        </span>
       </div>
     </div>
 

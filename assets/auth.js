@@ -74,6 +74,23 @@ async function initPainel(){
   }catch(e){}
   var elC = document.getElementById('p-cota');
   if(elC) elC.textContent = (COTAS[planoAtual] || 500).toLocaleString('pt-BR');
+
+  // lista os sites do usuário
+  try{
+    var { data: meus } = await db.from('sites').select('id,prompt,created_at').eq('user_id', u.id).order('created_at', { ascending:false });
+    var area = document.getElementById('sites-area');
+    if(area && meus && meus.length){
+      var h = '<div class="gallery">';
+      meus.forEach(function(s){
+        var t = (s.prompt || 'Site sem descrição').replace(/[<>]/g,'').slice(0,70);
+        h += '<a class="demo-card" href="/s/?id=' + s.id + '" target="_blank" rel="noopener">'
+          + '<div class="demo-thumb" style="background:linear-gradient(135deg,#EFC03A,#B5860F);color:#251a02">Mistto</div>'
+          + '<div class="info"><h3>Seu site</h3><p>' + t + '</p></div></a>';
+      });
+      h += '</div>';
+      area.innerHTML = h;
+    }
+  }catch(e){}
 }
 
 /* ---- Comprar plano / tokens (a partir do painel) ---- */
@@ -127,10 +144,12 @@ async function gerarSite(){
   try{
     var { data: { session } } = await db.auth.getSession();
     if(!session){ location.href = '/login/'; return; }
+    var provEl = document.getElementById('create-provider');
+    var provider = provEl ? provEl.value : 'gemini';
     var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
-      body: JSON.stringify({ prompt: prompt, access_token: session.access_token })
+      body: JSON.stringify({ prompt: prompt, provider: provider, access_token: session.access_token })
     });
     var data = await res.json();
     if(data.id){
