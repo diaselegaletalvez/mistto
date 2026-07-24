@@ -151,7 +151,141 @@ document.addEventListener('DOMContentLoaded', function(){
   // checa login pra ajustar nav e planos
   loadSupabase(function(){ updateNav(); updatePlanos(); });
   calcTokens();
+  astMontar();
+  demoAnim();
 });
+
+/* ===== Animação do mockup da home (criando em tempo real, em loop) ===== */
+function demoAnim(){
+  var chat = document.getElementById('demo-chat');
+  var H = document.getElementById('demo-h'), S = document.getElementById('demo-sub'), C = document.getElementById('demo-cta');
+  if(!chat || !H || !S || !C) return;
+
+  var reduz = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function bolha(kind, text){
+    var d = document.createElement('div'); d.className = 'msg ' + kind;
+    if(kind === 'ai'){ d.innerHTML = '<span class="who">Mistto</span>' + text; } else { d.textContent = text; }
+    chat.appendChild(d); return d;
+  }
+  function digitando(kind){
+    var d = document.createElement('div'); d.className = 'msg ' + kind + ' demo-t';
+    d.innerHTML = (kind === 'ai' ? '<span class="who">Mistto</span>' : '') + '<span class="ast-typing"><span></span><span></span><span></span></span>';
+    chat.appendChild(d); return d;
+  }
+  function limpar(){
+    chat.innerHTML = '';
+    H.classList.remove('on'); S.classList.remove('on');
+    C.classList.remove('on'); C.classList.add('plain');
+  }
+  function esperar(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+  // versão estática pra quem prefere menos movimento
+  if(reduz){
+    bolha('ai', 'Oi! Me conta que site você quer criar.');
+    bolha('user', 'Uma landing pra minha cafeteria, tom aconchegante');
+    bolha('ai', 'Prontinho! Criei um hero com foto e um botão. Quer mudar a cor do botão?');
+    bolha('user', 'Deixa dourado, igual meu logo');
+    bolha('ai', 'Feito! Cliquei na parte que você selecionou no preview e ajustei.');
+    H.classList.add('on'); S.classList.add('on'); C.classList.add('on'); C.classList.remove('plain');
+    return;
+  }
+
+  async function rodar(){
+    /* eslint-disable no-constant-condition */
+    while(true){
+      limpar();
+      await esperar(700);
+      bolha('ai', 'Oi! Me conta que site você quer criar.');
+      await esperar(1100);
+      var t1 = digitando('user'); await esperar(950); t1.remove();
+      bolha('user', 'Uma landing pra minha cafeteria, tom aconchegante');
+      await esperar(700);
+      var t2 = digitando('ai'); await esperar(1250); t2.remove();
+      bolha('ai', 'Prontinho! Criei um hero com foto e um botão. Quer mudar a cor do botão?');
+      await esperar(300); H.classList.add('on');
+      await esperar(500); S.classList.add('on');
+      await esperar(500); C.classList.add('on');
+      await esperar(1300);
+      var t3 = digitando('user'); await esperar(950); t3.remove();
+      bolha('user', 'Deixa dourado, igual meu logo');
+      await esperar(700);
+      var t4 = digitando('ai'); await esperar(1150); t4.remove();
+      bolha('ai', 'Feito! Cliquei na parte que você selecionou no preview e ajustei.');
+      await esperar(250);
+      C.classList.add('pv-sel');
+      await esperar(220); C.classList.remove('plain');
+      await esperar(1500); C.classList.remove('pv-sel');
+      await esperar(2800);
+    }
+  }
+  rodar();
+}
+
+/* ===== Assistente Mistto (widget de suporte com IA) ===== */
+var AST = { hist: [], aberto: false, montado: false };
+
+function astMontar(){
+  if(AST.montado || !document.body) return;
+  var b = document.createElement('button');
+  b.className = 'ast-bubble'; b.id = 'ast-bubble';
+  b.setAttribute('aria-label', 'Abrir assistente Mistto');
+  b.onclick = astToggle;
+  b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  var p = document.createElement('div');
+  p.className = 'ast-panel'; p.id = 'ast-panel';
+  p.innerHTML =
+      '<div class="ast-head"><div><b>Assistente Mistto</b><span>Tira suas dúvidas na hora</span></div>'
+    + '<button class="ast-x" aria-label="Fechar" onclick="astToggle()">&times;</button></div>'
+    + '<div class="ast-msgs" id="ast-msgs"></div>'
+    + '<div class="ast-input"><input id="ast-in" placeholder="Escreva sua dúvida…" onkeydown="astKey(event)" autocomplete="off">'
+    + '<button aria-label="Enviar" onclick="astSend()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button></div>';
+  document.body.appendChild(b);
+  document.body.appendChild(p);
+  AST.montado = true;
+  astBot('Oi! Sou a assistente da Mistto. Posso explicar os planos, os tokens, as WeCoins ou como criar seu site. O que você quer saber?');
+  astSugestoes(['Como funciona?', 'Quais são os planos?', 'O que são WeCoins?', 'Tem plano grátis?']);
+}
+function astToggle(){
+  astMontar();
+  var p = document.getElementById('ast-panel');
+  AST.aberto = !AST.aberto;
+  p.classList.toggle('open', AST.aberto);
+  if(AST.aberto){ var i = document.getElementById('ast-in'); if(i) setTimeout(function(){ i.focus(); }, 60); }
+}
+function astAbrir(){ astMontar(); if(!AST.aberto) astToggle(); }
+function astScroll(){ var m = document.getElementById('ast-msgs'); if(m) m.scrollTop = m.scrollHeight; }
+function astUser(t){ var m = document.getElementById('ast-msgs'); var d = document.createElement('div'); d.className = 'ast-msg user'; d.textContent = t; m.appendChild(d); astScroll(); }
+function astBot(t){ var m = document.getElementById('ast-msgs'); var d = document.createElement('div'); d.className = 'ast-msg bot'; d.textContent = t; m.appendChild(d); astScroll(); return d; }
+function astSugestoes(arr){
+  var m = document.getElementById('ast-msgs');
+  var w = document.createElement('div'); w.className = 'ast-chips';
+  arr.forEach(function(s){
+    var c = document.createElement('span'); c.className = 'ast-chip'; c.textContent = s;
+    c.onclick = function(){ w.remove(); astEnviarTexto(s); };
+    w.appendChild(c);
+  });
+  m.appendChild(w); astScroll();
+}
+function astKey(e){ if(e.key === 'Enter'){ e.preventDefault(); astSend(); } }
+function astSend(){ var i = document.getElementById('ast-in'); var t = i ? i.value.trim() : ''; if(!t) return; i.value = ''; astEnviarTexto(t); }
+async function astEnviarTexto(t){
+  astUser(t);
+  AST.hist.push({ role: 'user', content: t });
+  var pensando = astBot('');
+  pensando.innerHTML = '<span class="ast-typing"><span></span><span></span><span></span></span>';
+  try{
+    var res = await fetch(SUPABASE_URL + '/functions/v1/assistente', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + SUPABASE_ANON_KEY },
+      body: JSON.stringify({ messages: AST.hist })
+    });
+    var data = await res.json();
+    if(data.reply){ pensando.textContent = data.reply; AST.hist.push({ role: 'assistant', content: data.reply }); }
+    else { pensando.textContent = 'Não consegui responder agora. Escreve pra gente em contato@weblar.app.br que a gente ajuda.'; }
+  }catch(e){ pensando.textContent = 'Sem conexão agora. Tenta de novo, ou fala com a gente em contato@weblar.app.br.'; }
+  astScroll();
+}
 
 /* ---- Lista de espera ---- */
 async function joinWaitlist(e){

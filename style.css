@@ -327,3 +327,39 @@ footer{border-top:1px solid var(--line);padding:48px 0 34px;margin-top:40px;back
 .ed-loading{position:absolute;inset:18px;border-radius:16px;background:rgba(255,249,239,.86);backdrop-filter:blur(2px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:var(--muted);font-weight:500}
 .ed-spin{width:38px;height:38px;border:3px solid rgba(212,160,23,.25);border-top-color:var(--gold);border-radius:50%;animation:edspin .8s linear infinite}
 @keyframes edspin{to{transform:rotate(360deg)}}
+
+/* ===== ASSISTENTE (widget flutuante de suporte) ===== */
+.ast-bubble{position:fixed;right:22px;bottom:22px;z-index:200;width:58px;height:58px;border-radius:50%;background:var(--gold);color:#251a02;border:none;cursor:pointer;box-shadow:0 12px 30px rgba(212,160,23,.45);display:flex;align-items:center;justify-content:center;transition:.2s}
+.ast-bubble:hover{background:var(--gold2);transform:translateY(-2px)}
+.ast-bubble svg{width:26px;height:26px}
+.ast-panel{position:fixed;right:22px;bottom:92px;z-index:200;width:362px;max-width:calc(100vw - 32px);height:520px;max-height:calc(100vh - 130px);background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:0 30px 70px rgba(13,21,32,.28);display:none;flex-direction:column;overflow:hidden}
+.ast-panel.open{display:flex}
+.ast-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;background:var(--ink);color:var(--cream)}
+.ast-head b{font-family:'Fraunces',serif;font-size:1.05rem;display:block;line-height:1.2}
+.ast-head span{font-size:.76rem;color:rgba(241,245,249,.7)}
+.ast-x{background:none;border:none;color:var(--cream);font-size:1.5rem;cursor:pointer;line-height:1;padding:0 4px}
+.ast-msgs{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px;background:var(--cream)}
+.ast-msg{padding:10px 14px;border-radius:14px;font-size:.9rem;line-height:1.5;max-width:86%;white-space:pre-wrap}
+.ast-msg.user{background:var(--gold);color:#251a02;align-self:flex-end;border-bottom-right-radius:4px;font-weight:500}
+.ast-msg.bot{background:#fff;border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:4px}
+.ast-chips{display:flex;flex-wrap:wrap;gap:7px}
+.ast-chip{font-size:.8rem;background:var(--cream2);border:1px solid var(--line);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer;transition:.15s}
+.ast-chip:hover{background:var(--gold);border-color:var(--gold);color:#251a02}
+.ast-input{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);background:var(--card)}
+.ast-input input{flex:1;background:var(--cream);border:1.5px solid var(--line);border-radius:999px;padding:11px 16px;font-family:'Inter';font-size:.9rem;color:var(--ink);outline:none}
+.ast-input input:focus{border-color:var(--gold)}
+.ast-input button{background:var(--gold);color:#251a02;border:none;width:42px;height:42px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+.ast-input button:hover{background:var(--gold2)}
+.ast-input button svg{width:18px;height:18px}
+.ast-typing span{display:inline-block;width:6px;height:6px;margin:0 1px;border-radius:50%;background:#8a6a09;opacity:.5;animation:edb 1.1s infinite}
+.ast-typing span:nth-child(2){animation-delay:.2s}
+.ast-typing span:nth-child(3){animation-delay:.4s}
+
+/* ===== ANIMAÇÃO DO MOCKUP (home: criando em tempo real) ===== */
+.split .chat{max-height:430px;overflow:hidden}
+.split .chat .msg{animation:demoIn .35s ease both}
+@keyframes demoIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.pv-inner .da{opacity:0;transform:translateY(10px);transition:opacity .5s,transform .5s}
+.pv-inner .da.on{opacity:1;transform:none}
+.pv-cta.plain{background:#ece4d3;color:#8a8577;transition:background .5s,color .5s}
+.demo-t .ast-typing span{background:#8a6a09}

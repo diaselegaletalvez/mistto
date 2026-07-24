@@ -56,19 +56,13 @@
           <span class="win-url">mistto.weblar.app.br/editor</span>
         </div>
         <div class="split">
-          <div class="chat">
-            <div class="msg ai"><span class="who">Mistto</span>Oi! Me conta que site você quer criar.</div>
-            <div class="msg user">Uma landing pra minha cafeteria, tom aconchegante</div>
-            <div class="msg ai"><span class="who">Mistto</span>Prontinho! Criei um hero com foto e um botão. Quer mudar a cor do botão?</div>
-            <div class="msg user">Deixa dourado, igual meu logo</div>
-            <div class="msg ai"><span class="who">Mistto</span>Feito! Cliquei na parte que você selecionou no preview e ajustei.</div>
-          </div>
+          <div class="chat" id="demo-chat"></div>
           <div class="preview">
             <span class="pv-badge">preview ao vivo · clicável</span>
             <div class="pv-inner">
-              <div class="pv-h">Café da Serra</div>
-              <div class="pv-sub">Grãos torrados na hora, no coração da cidade.</div>
-              <span class="pv-cta pv-sel">Ver cardápio</span>
+              <div class="pv-h da" id="demo-h">Café da Serra</div>
+              <div class="pv-sub da" id="demo-sub">Grãos torrados na hora, no coração da cidade.</div>
+              <span class="pv-cta da plain" id="demo-cta">Ver cardápio</span>
             </div>
           </div>
         </div>
@@ -178,7 +172,7 @@
   <div class="wrap">
     <div class="sec-head">
       <h2>Precisa de <span class="gold">ajuda</span>?</h2>
-      <p>A gente responde rápido — e em breve um assistente com IA aqui mesmo pra tirar dúvidas na hora.</p>
+      <p>A gente responde rápido — e tem um assistente com IA aqui mesmo pra tirar dúvidas na hora.</p>
     </div>
     <div class="steps">
       <div class="step">
@@ -192,8 +186,9 @@
         <a href="mailto:contato@weblar.app.br" class="btn btn-ghost" style="margin-top:16px">contato@weblar.app.br</a>
       </div>
       <div class="step">
-        <h3>Assistente Mistto <span class="soon">em breve</span></h3>
-        <p>Um chat com IA aqui no site pra resolver na hora, assim que abrirmos.</p>
+        <h3>Assistente Mistto</h3>
+        <p>Um chat com IA aqui no site pra tirar dúvidas de planos, tokens e WeCoins na hora.</p>
+        <a href="#" onclick="astAbrir();return false;" class="btn btn-gold" style="margin-top:16px">Falar com o assistente</a>
       </div>
     </div>
     <div style="text-align:center;margin-top:40px">
