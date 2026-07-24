@@ -72,8 +72,23 @@ async function initPainel(){
       if(elV) elV.innerHTML = 'Ativo até ' + new Date(sub.valid_until).toLocaleDateString('pt-BR');
     }
   }catch(e){}
+  var cota = COTAS[planoAtual] || 500;
   var elC = document.getElementById('p-cota');
-  if(elC) elC.textContent = (COTAS[planoAtual] || 500).toLocaleString('pt-BR');
+  if(elC) elC.textContent = cota.toLocaleString('pt-BR');
+  // barra de uso de tokens (uso ainda não é rastreado → 0% por enquanto)
+  var usados = 0;
+  var elU = document.getElementById('p-usados');
+  if(elU) elU.textContent = usados.toLocaleString('pt-BR');
+  var bar = document.getElementById('tok-bar-fill');
+  if(bar) bar.style.width = Math.min(100, Math.round((usados / cota) * 100)) + '%';
+
+  // atalhos da caixa de criar rápido (chips preenchem o textarea)
+  document.querySelectorAll('#pnl-chips .chip').forEach(function(c){
+    c.addEventListener('click', function(){
+      var t = document.getElementById('pnl-prompt');
+      if(t){ t.value = c.getAttribute('data-prompt') || c.textContent; t.focus(); }
+    });
+  });
 
   // lista os sites do usuário (com ações: ver / tirar do ar / apagar)
   try{
@@ -98,6 +113,13 @@ async function initPainel(){
       area.innerHTML = h;
     }
   }catch(e){}
+}
+
+/* ---- Criar rápido a partir do painel (leva o texto pro /create) ---- */
+function irCriar(){
+  var t = document.getElementById('pnl-prompt');
+  var v = t ? t.value.trim() : '';
+  location.href = '/create/' + (v ? ('?p=' + encodeURIComponent(v)) : '');
 }
 
 /* ---- Gestão dos sites ---- */
