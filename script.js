@@ -27,20 +27,16 @@ async function updateNav(){
   try{
     if(!db) db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     var { data: { session } } = await db.auth.getSession();
-    if(!session) return; // deslogado: mantém "Entrar"
     var links = document.querySelector('.nav-links');
     if(!links) return;
-    // tira o "Entrar" (login)
+    var cta = document.getElementById('nav-cta');
     var entrar = links.querySelector('a[href="/login/"]');
-    if(entrar) entrar.remove();
-    // põe "Painel" antes do botão dourado, se ainda não existe
-    if(!links.querySelector('a[href="/painel/"]')){
-      var cta = links.querySelector('a.btn');
-      var a = document.createElement('a');
-      a.href = '/painel/';
-      a.textContent = 'Painel';
-      links.insertBefore(a, cta || null);
+    if(session){
+      // logado: some "Entrar", e o botão vira "Painel"
+      if(entrar) entrar.remove();
+      if(cta){ cta.textContent = 'Painel'; cta.href = '/painel/'; }
     }
+    // deslogado: o botão fica "Criar conta" (padrão do HTML)
   }catch(e){ /* silencioso */ }
 }
 
