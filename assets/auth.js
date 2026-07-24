@@ -58,4 +58,15 @@ async function initPainel(){
   var nome = (u.user_metadata && u.user_metadata.nome) || u.email.split('@')[0];
   var elN = document.getElementById('u-nome'); if(elN) elN.textContent = nome;
   var elE = document.getElementById('u-email'); if(elE) elE.textContent = u.email;
+  // lê a assinatura ativa (se houver)
+  try{
+    var { data: sub } = await db.from('subscriptions').select('*').eq('user_id', u.id).maybeSingle();
+    if(sub && sub.status === 'active' && sub.valid_until && new Date(sub.valid_until) > new Date()){
+      var nomes = { zefiro:'Zéfiro', minuano:'Minuano', siroco:'Siroco', boreas:'Bóreas' };
+      var elP = document.getElementById('p-plano');
+      if(elP) elP.textContent = nomes[sub.plano] || sub.plano;
+      var elV = document.getElementById('p-validade');
+      if(elV) elV.innerHTML = 'Ativo até ' + new Date(sub.valid_until).toLocaleDateString('pt-BR');
+    }
+  }catch(e){}
 }
