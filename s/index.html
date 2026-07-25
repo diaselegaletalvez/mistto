@@ -19,17 +19,41 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
   if(!id && !slug){ document.getElementById('load').textContent = 'Site não encontrado.'; return; }
   var filtro = id ? ('id=eq.' + encodeURIComponent(id)) : ('slug=eq.' + encodeURIComponent(slug));
   try{
-    var res = await fetch(SB_URL + '/rest/v1/mistto_sites?' + filtro + '&select=html', {
+    var res = await fetch(SB_URL + '/rest/v1/mistto_sites?' + filtro + '&select=html,expires_at,published', {
       headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
     });
     var rows = await res.json();
     if(!rows || !rows.length || !rows[0].html){ document.getElementById('load').textContent = 'Site não encontrado.'; return; }
-    var html = rows[0].html;
+    var row = rows[0];
+    var html = row.html;
     var editMode = !!params.get('edit');
+    // visitante público: respeita "fora do ar" e a expiração do plano grátis (o dono continua vendo no editor)
+    if(!editMode){
+      var expirou = row.expires_at && (new Date(row.expires_at).getTime() - Date.now() <= 0);
+      var offline = row.published === false;
+      if(expirou || offline){ mostraForaDoAr(expirou); return; }
+    }
     document.open(); document.write(html); document.close();
     if(editMode){ setupSelector(); }
   }catch(e){ document.getElementById('load').textContent = 'Erro ao carregar.'; }
 })();
+
+/* página de "fora do ar" (site grátis expirou ou foi despublicado) */
+function mostraForaDoAr(expirou){
+  document.title = 'Site fora do ar — Mistto';
+  document.body.innerHTML = ''
+    + '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0D1520;color:#F1F5F9;font-family:system-ui,sans-serif;padding:24px;text-align:center">'
+    + '<div style="max-width:460px">'
+    + '<div style="font-size:1.6rem;font-weight:700;margin-bottom:10px">Mis<span style="color:#EFC03A">tto</span></div>'
+    + '<h1 style="font-size:1.4rem;margin:0 0 10px">Este site está fora do ar</h1>'
+    + '<p style="color:#8a99ad;line-height:1.6;margin:0 0 22px">'
+    + (expirou
+        ? 'Ele foi criado no plano grátis, que fica 5 dias no ar. O conteúdo está guardado — o dono pode reativá-lo assinando um plano.'
+        : 'O dono tirou este site do ar por enquanto.')
+    + '</p>'
+    + '<a href="https://mistto.weblar.app.br/" style="display:inline-block;background:#EFC03A;color:#251a02;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:12px">Criar meu site na Mistto</a>'
+    + '</div></div>';
+}
 
 /* ===== Modo edição: seleção + manipulação direta (roda dentro do iframe) ===== */
 var HL = '__mistto_sel', HV = '__mistto_hover';

@@ -51,6 +51,20 @@ async function doLogin(e){
 async function doLogout(){ await db.auth.signOut(); location.href = '/'; }
 
 /* ---- Guarda + preenche o painel ---- */
+/* impressão digital leve do dispositivo (o servidor re-hasha com sal) */
+function miFingerprint(){
+  try{
+    var n = navigator, s = [
+      n.userAgent, n.language, (n.languages||[]).join(','),
+      screen.width + 'x' + screen.height, screen.colorDepth,
+      new Date().getTimezoneOffset(), n.hardwareConcurrency||'',
+      n.platform||'', n.maxTouchPoints||''
+    ].join('|');
+    var h = 5381; for(var i=0;i<s.length;i++){ h = (((h<<5)+h) ^ s.charCodeAt(i)) >>> 0; }
+    return h.toString(16);
+  }catch(e){ return ''; }
+}
+
 async function initPainel(){
   var { data: { session } } = await db.auth.getSession();
   if(!session){ location.href = '/login/'; return; }
@@ -96,9 +110,14 @@ async function initPainel(){
     });
   });
 
+  // se a pessoa assinou um plano pago, reativa os sites que estavam com prazo (limpa expiração)
+  if(planoAtual !== 'zefiro'){
+    try{ await db.from('mistto_sites').update({ expires_at:null }).eq('user_id', u.id).not('expires_at','is',null); }catch(e){}
+  }
+
   // lista os sites do usuário (com ações: ver / tirar do ar / apagar)
   try{
-    var { data: meus } = await db.from('mistto_sites').select('id,nome,prompt,created_at,published').eq('user_id', u.id).order('created_at', { ascending:false });
+    var { data: meus } = await db.from('mistto_sites').select('id,nome,prompt,created_at,published,expires_at').eq('user_id', u.id).order('created_at', { ascending:false });
     var area = document.getElementById('sites-area');
     if(area && meus && meus.length){
       var bs = 'padding:7px 14px;font-size:.82rem';
@@ -108,9 +127,22 @@ async function initPainel(){
         var titulo = esc(s.nome) || 'Seu site';
         var t = esc(s.prompt || 'Site sem descrição').slice(0,70);
         var pub = s.published !== false;
+        // status do prazo (plano grátis: 5 dias no ar)
+        var selo = '';
+        if(!pub){ selo = ' <span class="soon">fora do ar</span>'; }
+        if(s.expires_at){
+          var ms = new Date(s.expires_at).getTime() - Date.now();
+          if(ms <= 0){ selo = ' <span class="soon" style="background:#d9534f;color:#fff">expirou</span>'; }
+          else{
+            var dias = Math.ceil(ms / 864e5);
+            selo += ' <span class="soon">cai em ' + dias + (dias === 1 ? ' dia' : ' dias') + '</span>';
+          }
+        }
+        var expirou = s.expires_at && (new Date(s.expires_at).getTime() - Date.now() <= 0);
         h += '<div class="demo-card">'
           + '<div class="demo-thumb" style="background:linear-gradient(135deg,#EFC03A,#B5860F);color:#251a02">Mistto</div>'
-          + '<div class="info"><h3>' + titulo + (pub ? '' : ' <span class="soon">fora do ar</span>') + '</h3><p>' + t + '</p>'
+          + '<div class="info"><h3>' + titulo + selo + '</h3><p>' + t + '</p>'
+          + (expirou ? '<p style="font-size:.8rem;color:var(--golddark);margin-top:6px"><a href="/precos/" style="color:var(--golddark);font-weight:600">Assine pra colocar de volta no ar</a> — seu site está guardado.</p>' : '')
           + '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">'
           + '<a class="btn btn-ghost" style="' + bs + '" href="/s/?id=' + s.id + '" target="_blank" rel="noopener">Abrir</a>'
           + '<a class="btn btn-ghost" style="' + bs + '" href="/editor/?id=' + s.id + '">Editar</a>'
@@ -149,7 +181,7 @@ async function importarSite(){
     var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
-      body: JSON.stringify({ importar:true, url:url.trim(), html_importado:html, nome:nome, provider:prov, access_token: session.access_token })
+      body: JSON.stringify({ importar:true, url:url.trim(), html_importado:html, nome:nome, provider:prov, fp: miFingerprint(), access_token: session.access_token })
     });
     var d = await res.json().catch(function(){ return {}; });
     if(!res.ok || d.error){ m(d.msg || 'Não consegui importar agora. Tente colar o código HTML da página.', true); if(btn){ btn.style.pointerEvents=''; btn.style.opacity=''; btn.textContent='Importar site'; } return; }
@@ -423,6 +455,9 @@ async function gerarSite(){
 function traduzGerar(data, status){
   var e = data && (data.error || '');
   if(e === 'sem_tokens') return data.msg || 'Seus tokens do mês acabaram. Faça upgrade ou compre tokens avulsos.';
+  if(e === 'email_nao_confirmado') return data.msg || 'Confirme seu e-mail pra criar seu site grátis.';
+  if(e === 'abuso') return data.msg || 'Já existe um site grátis criado neste dispositivo. Assine um plano pra criar mais.';
+  if(e === 'limite') return data.msg || 'Você atingiu o limite do plano grátis (1 site). Assine pra criar mais.';
   if(e === 'ia_sem_resposta') return 'A IA não respondeu' + (data.detail ? ' — ' + data.detail : '') + '. Tente outro provedor no seletor.';
   if(e === 'db') return 'Erro ao salvar o site. A tabela existe? Rode o mistto-tudo.sql. (' + (data.detail || '') + ')';
   if(e === 'precisa estar logado') return 'Sua sessão expirou. Entre de novo.';
@@ -711,7 +746,7 @@ async function gerarDoResumo(resumo){
     var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
-      body: JSON.stringify({ prompt: prompt, nome: EDITOR.nome, provider:EDITOR.provider, access_token:session.access_token }),
+      body: JSON.stringify({ prompt: prompt, nome: EDITOR.nome, provider:EDITOR.provider, fp: miFingerprint(), access_token:session.access_token }),
       signal: EDITOR.abort.signal
     });
     var data = await res.json();
