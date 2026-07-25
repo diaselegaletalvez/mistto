@@ -130,6 +130,36 @@ function irCriar(){
   location.href = '/create/' + (v ? ('?p=' + encodeURIComponent(v)) : '');
 }
 
+/* ---- Importar site de outro criador (Base44, Lovable, v0…) ---- */
+async function importarSite(){
+  var btn = document.getElementById('imp-btn');
+  var msg = document.getElementById('imp-msg');
+  var nome = (document.getElementById('imp-nome')||{}).value || '';
+  var url  = (document.getElementById('imp-url')||{}).value || '';
+  var html = (document.getElementById('imp-html')||{}).value || '';
+  function m(txt, err){ if(msg){ msg.style.display='block'; msg.style.color = err ? '#d9534f' : 'var(--muted)'; msg.textContent = txt; } }
+  if(!url.trim() && !html.trim()){ m('Cole o link ou o código do site que você quer importar.', true); return; }
+  var prov = 'gemini';
+  var provEl = document.getElementById('imp-provider'); if(provEl) prov = provEl.value;
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    if(!session){ location.href = '/login/'; return; }
+    if(btn){ btn.style.pointerEvents='none'; btn.style.opacity='.6'; btn.textContent='Importando…'; }
+    m('A Mistto está recriando seu site… isso pode levar alguns segundos.');
+    var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
+      body: JSON.stringify({ importar:true, url:url.trim(), html_importado:html, nome:nome, provider:prov, access_token: session.access_token })
+    });
+    var d = await res.json().catch(function(){ return {}; });
+    if(!res.ok || d.error){ m(d.msg || 'Não consegui importar agora. Tente colar o código HTML da página.', true); if(btn){ btn.style.pointerEvents=''; btn.style.opacity=''; btn.textContent='Importar site'; } return; }
+    location.href = '/editor/?id=' + d.id + '&novo=1';
+  }catch(e){
+    m('Algo deu errado. Tente novamente.', true);
+    if(btn){ btn.style.pointerEvents=''; btn.style.opacity=''; btn.textContent='Importar site'; }
+  }
+}
+
 /* ---- Gestão dos sites (atalhos do painel) ---- */
 async function toggleSite(id, pub){
   try{ await db.from('mistto_sites').update({ published: !pub }).eq('id', id); location.reload(); }

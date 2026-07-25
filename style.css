@@ -305,6 +305,12 @@ footer{border-top:1px solid var(--line);padding:48px 0 34px;margin-top:40px;back
 .tok-calc select:focus{border-color:var(--gold)}
 .tok-total{font-family:'Fraunces';font-weight:700;font-size:1.3rem;color:var(--ink)}
 
+/* ===== Importar site ===== */
+.imp-box input,.imp-box textarea{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;font-family:'Inter';font-size:.95rem;color:var(--ink);outline:none;box-sizing:border-box}
+.imp-box input:focus,.imp-box textarea:focus{border-color:var(--gold)}
+.imp-box textarea{resize:vertical;line-height:1.5}
+.imp-ou{text-align:center;color:var(--muted);font-size:.82rem;margin:12px 0 8px;position:relative}
+
 /* ===== EDITOR (chat + preview) ===== */
 .ed-body{overflow:hidden}
 .ed{display:grid;grid-template-columns:400px 1fr;height:100vh;width:100vw}

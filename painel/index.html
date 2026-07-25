@@ -97,6 +97,24 @@
       </div>
     </div>
 
+    <!-- Importar site de outro criador -->
+    <div class="wecoins" style="margin-top:40px">
+      <div>
+        <span class="tag">Importar</span>
+        <h2 style="margin-top:14px">Veio do Base44, Lovable ou v0?</h2>
+        <p>Traga um site que você criou em outra ferramenta e a Mistto recria como uma página editável aqui — depois é só continuar melhorando no chat.</p>
+        <p style="font-size:.82rem;color:var(--muted)">Dica: colar o código HTML da página costuma dar um resultado mais fiel do que só o link.</p>
+      </div>
+      <div class="imp-box">
+        <input id="imp-nome" type="text" placeholder="Nome do projeto (opcional)" style="width:100%">
+        <input id="imp-url" type="url" placeholder="Link do site (ex: https://meuapp.base44.app)" style="width:100%;margin-top:8px">
+        <div class="imp-ou">ou cole o código</div>
+        <textarea id="imp-html" rows="3" placeholder="Cole aqui o HTML da página (opcional, mais fiel)" style="width:100%"></textarea>
+        <a href="#" onclick="importarSite();return false;" class="btn btn-gold" id="imp-btn" style="width:100%;justify-content:center;margin-top:10px">Importar site</a>
+        <p id="imp-msg" style="font-size:.82rem;color:var(--muted);text-align:center;margin-top:8px;display:none"></p>
+      </div>
+    </div>
+
     <!-- Integração com o Weblar -->
     <div class="wecoins" style="margin-top:40px">
       <div>
