@@ -110,7 +110,7 @@ nav .wrap{max-width:none;padding:0 8px 0 20px}
 .msg.user{background:var(--gold);color:#251a02;align-self:flex-end;border-bottom-right-radius:4px;font-weight:500}
 .msg.ai{background:var(--card);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:4px}
 .msg.ai .who{font-size:.72rem;color:var(--golddark);font-weight:700;display:block;margin-bottom:3px}
-.preview{position:relative;background:linear-gradient(160deg,#fff,var(--cream2))}
+.preview{position:relative;background:linear-gradient(160deg,var(--card),var(--cream2))}
 .pv-inner{padding:36px 32px}
 .pv-badge{position:absolute;top:16px;right:16px;font-size:.72rem;color:var(--golddark);background:rgba(212,160,23,.15);border:1px solid rgba(212,160,23,.4);padding:5px 12px;border-radius:999px}
 .pv-h{font-family:'Fraunces';font-size:2rem;font-weight:700;margin-bottom:10px}
@@ -188,7 +188,7 @@ section{padding:76px 0;position:relative}
 .plan .btn{width:100%;justify-content:center}
 
 /* WECOINS / faixa destaque */
-.wecoins{background:linear-gradient(135deg,var(--cream2),#fff);border:1px solid rgba(212,160,23,.35);border-radius:28px;padding:52px;display:grid;grid-template-columns:1.1fr 1fr;gap:44px;align-items:center;box-shadow:var(--shadow-sm)}
+.wecoins{background:linear-gradient(135deg,var(--cream2),var(--card));border:1px solid rgba(212,160,23,.35);border-radius:28px;padding:52px;display:grid;grid-template-columns:1.1fr 1fr;gap:44px;align-items:center;box-shadow:var(--shadow-sm)}
 @media(max-width:760px){.wecoins{grid-template-columns:1fr;padding:34px}}
 .wecoins h2{font-size:2.2rem;margin-bottom:14px}
 .wecoins p{color:var(--muted);margin-bottom:12px}
