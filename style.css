@@ -308,13 +308,19 @@ footer{border-top:1px solid var(--line);padding:48px 0 34px;margin-top:40px;back
 .ed-typing span{display:inline-block;width:6px;height:6px;margin:0 1px;border-radius:50%;background:#8a6a09;opacity:.5;animation:edb 1.1s infinite}
 .ed-typing span:nth-child(2){animation-delay:.2s}.ed-typing span:nth-child(3){animation-delay:.4s}
 @keyframes edb{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
-.ed-input{border-top:1px solid var(--line);padding:16px 18px;background:var(--card)}
-.ed-input textarea{width:100%;background:var(--cream);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;font-family:'Inter';font-size:.95rem;color:var(--ink);resize:none;outline:none}
-.ed-input textarea:focus{border-color:var(--gold)}
-.ed-input-row{display:flex;gap:8px;align-items:center;margin-top:10px}
-.ed-input-row select{background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:10px 14px;font-family:'Inter';font-size:.86rem;color:var(--ink);outline:none}
-.ed-input-row .btn{flex:1;justify-content:center;padding:12px 20px}
-.ed-input-row .btn[disabled]{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+.ed-input{border-top:1px solid var(--line);padding:14px 16px;background:var(--card)}
+/* compositor estilo Claude: caixa arredondada com barra embaixo */
+.ed-composer{background:var(--cream);border:1.5px solid var(--line);border-radius:22px;padding:12px 14px 10px;box-shadow:var(--shadow-sm);transition:border-color .15s}
+.ed-composer:focus-within{border-color:var(--gold)}
+.ed-composer textarea{width:100%;background:transparent;border:none;outline:none;resize:none;font-family:'Inter';font-size:.96rem;color:var(--ink);line-height:1.5;min-height:24px;max-height:150px;display:block}
+.ed-composer textarea::placeholder{color:#a7afbc}
+.ed-composer-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.ed-prov{background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-family:'Inter';font-size:.82rem;color:var(--muted);outline:none;cursor:pointer}
+.ed-prov:hover{border-color:var(--gold);color:var(--ink)}
+.ed-send-btn{width:38px;height:38px;border-radius:50%;background:var(--gold);color:#251a02;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+.ed-send-btn:hover{background:var(--gold2);transform:translateY(-1px)}
+.ed-send-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.ed-send-btn svg{width:18px;height:18px}
 
 /* coluna da preview */
 .ed-preview{display:flex;flex-direction:column;height:100vh;background:var(--cream2)}

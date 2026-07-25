@@ -448,11 +448,17 @@ async function initEditor(){
   var box = document.getElementById('ed-msgs');
   if(box) box.innerHTML = '';
 
-  // Enter envia (Shift+Enter quebra linha)
+  // Enter envia (Shift+Enter quebra linha) + campo cresce conforme digita
   var ta = document.getElementById('ed-prompt');
-  if(ta){ ta.addEventListener('keydown', function(ev){
-    if(ev.key === 'Enter' && !ev.shiftKey){ ev.preventDefault(); enviarEdicao(); }
-  }); }
+  if(ta){
+    ta.addEventListener('keydown', function(ev){
+      if(ev.key === 'Enter' && !ev.shiftKey){ ev.preventDefault(); enviarEdicao(); }
+    });
+    ta.addEventListener('input', function(){
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight, 150) + 'px';
+    });
+  }
 
   var id = qs.get('id');
   if(id){ return initEditorExistente(session, id, qs); }
@@ -581,7 +587,7 @@ async function enviarEdicao(){
   if(EDITOR.fase === 'entrevista'){
     edAddMsg(instr, 'user');
     EDITOR.msgs.push({ role:'user', content:instr });
-    ta.value = '';
+    ta.value = ''; ta.style.height = 'auto';
     entrevistaPasso();
     return;
   }

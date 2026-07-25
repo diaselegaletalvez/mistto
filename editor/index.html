@@ -23,15 +23,19 @@
     </div>
 
     <div class="ed-input">
-      <textarea id="ed-prompt" rows="2" placeholder="Peça uma mudança. Ex: troca a cor pra azul, adiciona uma seção de depoimentos, muda o texto do topo…"></textarea>
-      <div class="ed-input-row">
-        <select id="ed-provider">
-          <option value="gemini">IA: Gemini</option>
-          <option value="groq">IA: Groq</option>
-          <option value="cerebras">IA: Cerebras</option>
-          <option value="openrouter">IA: OpenRouter</option>
-        </select>
-        <button id="ed-send" class="btn btn-gold" onclick="enviarEdicao()">Enviar</button>
+      <div class="ed-composer">
+        <textarea id="ed-prompt" rows="1" placeholder="Escreva uma mensagem…"></textarea>
+        <div class="ed-composer-bar">
+          <select id="ed-provider" class="ed-prov" aria-label="Escolher IA">
+            <option value="gemini">IA: Gemini</option>
+            <option value="groq">IA: Groq</option>
+            <option value="cerebras">IA: Cerebras</option>
+            <option value="openrouter">IA: OpenRouter</option>
+          </select>
+          <button id="ed-send" class="ed-send-btn" aria-label="Enviar" onclick="enviarEdicao()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+          </button>
+        </div>
       </div>
     </div>
   </aside>
