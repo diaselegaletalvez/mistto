@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>try{if(localStorage.getItem("mistto-tema")==="dark")document.documentElement.classList.add("dark")}catch(e){}</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Minha conta — Mistto</title>
@@ -26,7 +27,7 @@
 
 <section class="painel">
   <div class="wrap" style="max-width:720px">
-    <a href="/painel/" style="color:#8a6a09;font-weight:600;font-size:.9rem">&larr; Voltar ao painel</a>
+    <a href="/painel/" style="color:var(--golddark);font-weight:600;font-size:.9rem">&larr; Voltar ao painel</a>
     <h1 style="font-size:2rem;margin:12px 0 4px">Minha conta</h1>
     <p class="hi" style="color:var(--muted)">Sua conta é a mesma no Mistto e no Weblar — o que mudar aqui vale nos dois.</p>
 
@@ -37,7 +38,7 @@
       <div class="stat" style="margin-bottom:18px">
         <div class="lbl">Nome</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
-          <input id="ct-nome" type="text" placeholder="Seu nome" style="flex:1;min-width:200px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-family:'Inter';font-size:1rem;color:var(--ink);outline:none">
+          <input id="ct-nome" type="text" placeholder="Seu nome" style="flex:1;min-width:200px;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-family:'Inter';font-size:1rem;color:var(--ink);outline:none">
           <button class="btn btn-gold" onclick="salvarNomeConta()">Salvar</button>
         </div>
         <div id="ct-nome-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>
@@ -48,7 +49,7 @@
         <div class="lbl">E-mail</div>
         <p style="color:var(--muted);font-size:.9rem;margin:8px 0 4px">Ao trocar, enviamos um link de confirmação pro novo e-mail. A troca só vale depois de confirmar lá.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
-          <input id="ct-email" type="email" placeholder="voce@email.com" style="flex:1;min-width:200px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-family:'Inter';font-size:1rem;color:var(--ink);outline:none">
+          <input id="ct-email" type="email" placeholder="voce@email.com" style="flex:1;min-width:200px;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-family:'Inter';font-size:1rem;color:var(--ink);outline:none">
           <button class="btn btn-ghost" onclick="trocarEmailConta()">Trocar e-mail</button>
         </div>
         <div id="ct-email-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>
@@ -69,7 +70,7 @@
           <h2 style="margin-top:14px">Ganhe 5% indicando</h2>
           <p>Compartilhe seu link. Cada pessoa que se cadastrar por ele te dá 5% de desconto — vale no Weblar e no Mistto.</p>
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px">
-            <div id="ct-ref" style="flex:1;min-width:220px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-size:.85rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">carregando…</div>
+            <div id="ct-ref" style="flex:1;min-width:220px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-size:.85rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">carregando…</div>
             <button class="btn btn-gold" onclick="copiarIndicacao()" style="padding:11px 18px">Copiar link</button>
           </div>
           <div id="ct-ref-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>

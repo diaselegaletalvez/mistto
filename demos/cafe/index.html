@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>try{if(localStorage.getItem("mistto-tema")==="dark")document.documentElement.classList.add("dark")}catch(e){}</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Café da Serra — demo feito com a Mistto</title>
@@ -25,7 +26,7 @@
   .sec-t{font-size:2rem;color:#3b2a1d;text-align:center;margin-bottom:26px}
   .menu{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
   @media(max-width:760px){.menu{grid-template-columns:1fr}}
-  .item{background:#fff;border:1px solid #ecdec9;border-radius:16px;padding:20px}
+  .item{background:var(--card);border:1px solid #ecdec9;border-radius:16px;padding:20px}
   .item h3{color:#3b2a1d;display:flex;justify-content:space-between;font-size:1.1rem}
   .item .price{color:#b56a2e}
   .item p{color:#6b5a4a;font-size:.9rem;margin-top:6px}
@@ -50,7 +51,7 @@
   </div>
 </div>
 
-<section id="menu" style="background:#fff">
+<section id="menu" style="background:var(--card)">
   <div class="wrap">
     <h2 class="sec-t">Do cardápio</h2>
     <div class="menu">

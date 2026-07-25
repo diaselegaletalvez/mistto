@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>try{if(localStorage.getItem("mistto-tema")==="dark")document.documentElement.classList.add("dark")}catch(e){}</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Criar site — Mistto</title>
@@ -43,7 +44,7 @@
           <span class="chip" data-prompt="Uma landing pra meu evento, com programação, palestrantes e inscrição.">Evento</span>
         </div>
         <span style="display:flex;gap:8px;align-items:center">
-          <select id="create-provider" style="background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:11px 14px;font-family:'Inter';color:var(--ink);outline:none">
+          <select id="create-provider" style="background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:11px 14px;font-family:'Inter';color:var(--ink);outline:none">
             <option value="gemini">IA: Gemini</option>
             <option value="groq">IA: Groq</option>
             <option value="cerebras">IA: Cerebras</option>

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>try{if(localStorage.getItem("mistto-tema")==="dark")document.documentElement.classList.add("dark")}catch(e){}</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Editor — Mistto</title>
@@ -24,6 +25,7 @@
 
     <div class="ed-input">
       <div class="ed-composer">
+        <div id="ed-selecao" class="ed-selecao" style="display:none"></div>
         <div id="ed-anexo" class="ed-anexo" style="display:none"></div>
         <textarea id="ed-prompt" rows="1" placeholder="Escreva uma mensagem…"></textarea>
         <div class="ed-composer-bar">
@@ -58,6 +60,7 @@
       </div>
     </div>
     <div class="ed-frame-wrap">
+      <div class="ed-hint" id="ed-hint">Dica: clique numa parte do site pra editar só ela</div>
       <iframe id="ed-frame" title="Prévia do site"></iframe>
       <div class="ed-loading" id="ed-loading" style="display:none">
         <div class="ed-spin"></div>

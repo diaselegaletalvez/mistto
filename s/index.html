@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>try{if(localStorage.getItem("mistto-tema")==="dark")document.documentElement.classList.add("dark")}catch(e){}</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Site — Mistto</title>
@@ -23,9 +24,23 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
     });
     var rows = await res.json();
     if(!rows || !rows.length || !rows[0].html){ document.getElementById('load').textContent = 'Site não encontrado.'; return; }
-    document.open(); document.write(rows[0].html); document.close();
+    var html = rows[0].html;
+    // modo edição: injeta o seletor de partes (clicar num elemento fala com o editor)
+    if(params.get('edit')){ html += SELECT_SCRIPT; }
+    document.open(); document.write(html); document.close();
   }catch(e){ document.getElementById('load').textContent = 'Erro ao carregar.'; }
 })();
+
+var SELECT_SCRIPT = '<style>.__mistto_sel{outline:2px solid #D4A017 !important;outline-offset:2px !important}.__mistto_hover{outline:1px dashed rgba(212,160,23,.6) !important;outline-offset:2px !important;cursor:pointer}</style>'
+  + '<script>(function(){var sel=null,hov=null;'
+  + 'document.addEventListener("mouseover",function(e){if(hov&&hov!==sel)hov.classList.remove("__mistto_hover");hov=e.target;if(hov!==sel)hov.classList.add("__mistto_hover");},true);'
+  + 'document.addEventListener("mouseout",function(e){if(e.target!==sel)e.target.classList.remove("__mistto_hover");},true);'
+  + 'document.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();'
+  + 'if(sel)sel.classList.remove("__mistto_sel");sel=e.target;sel.classList.remove("__mistto_hover");sel.classList.add("__mistto_sel");'
+  + 'var txt=(sel.textContent||"").replace(/\\s+/g," ").trim().slice(0,60);var tag=sel.tagName.toLowerCase();'
+  + 'var desc=txt?(tag+" \\u201c"+txt+"\\u201d"):("elemento <"+tag+">");'
+  + 'try{parent.postMessage({mistto:"select",tag:tag,text:txt,desc:desc},"*");}catch(_){}'
+  + '},true);})();<\/script>';
 </script>
 </body>
 </html>

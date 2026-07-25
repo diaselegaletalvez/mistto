@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>try{if(localStorage.getItem("mistto-tema")==="dark")document.documentElement.classList.add("dark")}catch(e){}</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painel — Mistto</title>
@@ -30,7 +31,7 @@
     <div class="painel-head">
       <div>
         <h1>Olá, <span id="u-nome" class="gold">…</span></h1>
-        <p class="hi">Conectado como <span id="u-email">…</span> · <a href="/conta/" style="color:#8a6a09;font-weight:600">Minha conta</a></p>
+        <p class="hi">Conectado como <span id="u-email">…</span> · <a href="/conta/" style="color:var(--golddark);font-weight:600">Minha conta</a></p>
       </div>
       <a href="/create/" class="btn btn-gold">+ Criar novo site</a>
     </div>
@@ -53,7 +54,7 @@
       <div class="stat">
         <div class="lbl">Seu plano</div>
         <div class="val" id="p-plano">Zéfiro <small>(grátis)</small></div>
-        <div class="cta" id="p-validade"><a href="/precos/" style="color:#8a6a09;font-weight:600">Fazer upgrade</a></div>
+        <div class="cta" id="p-validade"><a href="/precos/" style="color:var(--golddark);font-weight:600">Fazer upgrade</a></div>
       </div>
       <div class="stat">
         <div class="lbl">Tokens do mês</div>
@@ -64,7 +65,7 @@
       <div class="stat">
         <div class="lbl">WeCoins</div>
         <div class="val" id="p-wecoins">0</div>
-        <div class="cta"><a href="/wecoins/" style="color:#8a6a09;font-weight:600">Como funciona</a></div>
+        <div class="cta"><a href="/wecoins/" style="color:var(--golddark);font-weight:600">Como funciona</a></div>
       </div>
     </div>
 

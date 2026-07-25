@@ -402,10 +402,14 @@ function traduzGerar(data, status){
 }
 
 /* ===================== EDITOR (chat + preview) ===================== */
-var EDITOR = { id:null, slug:null, publicado:true, fase:'edicao', nome:'', provider:'gemini', msgs:[], gerando:false, abort:null, ultimaInstr:'', anexo:null };
+var EDITOR = { id:null, slug:null, publicado:true, fase:'edicao', nome:'', provider:'gemini', msgs:[], gerando:false, abort:null, ultimaInstr:'', anexo:null, selecao:null };
 
 var SVG_SETA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>';
 var SVG_STOP = '<svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor"/></svg>';
+var SVG_LAPIS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+var SVG_COPIAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+var SVG_REGERAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>';
+function edIconBtn(svg, titulo){ var b = document.createElement('button'); b.className = 'ed-ic'; b.title = titulo; b.setAttribute('aria-label', titulo); b.innerHTML = svg; return b; }
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; });
@@ -424,11 +428,11 @@ function edAbortado(e){ return e && (e.name === 'AbortError' || /abort/i.test(St
 function edTools(bubble, texto, comRegenerar){
   if(!bubble) return;
   var bar = document.createElement('div'); bar.className = 'ed-tools';
-  var cop = document.createElement('button'); cop.textContent = 'Copiar';
-  cop.onclick = function(){ try{ navigator.clipboard.writeText(texto); cop.textContent = 'Copiado!'; setTimeout(function(){ cop.textContent = 'Copiar'; }, 1500); }catch(e){} };
+  var cop = edIconBtn(SVG_COPIAR, 'Copiar');
+  cop.onclick = function(){ try{ navigator.clipboard.writeText(texto); cop.classList.add('ok'); setTimeout(function(){ cop.classList.remove('ok'); }, 1200); }catch(e){} };
   bar.appendChild(cop);
   if(comRegenerar){
-    var reg = document.createElement('button'); reg.textContent = 'Regenerar';
+    var reg = edIconBtn(SVG_REGERAR, 'Regenerar');
     reg.onclick = function(){ if(EDITOR.gerando || !EDITOR.ultimaInstr) return; aplicarEdicao(EDITOR.ultimaInstr, true); };
     bar.appendChild(reg);
   }
@@ -467,8 +471,20 @@ function edAddMsg(texto, tipo){
   if(!box) return null;
   var d = document.createElement('div');
   d.className = 'msg ' + (tipo || 'ai');
-  if(tipo === 'ai'){ d.innerHTML = '<span class="who">Mistto</span>' + texto; }
-  else { d.textContent = texto; }
+  if(tipo === 'ai'){
+    d.innerHTML = '<span class="who">Mistto</span>' + texto;
+  } else if(tipo === 'user'){
+    // sua mensagem: texto + lápis pra editar (recoloca no compositor)
+    d.appendChild(document.createTextNode(texto));
+    var bar = document.createElement('div'); bar.className = 'ed-tools ed-tools-user';
+    var ed = edIconBtn(SVG_LAPIS, 'Editar');
+    ed.onclick = function(){
+      var t = document.getElementById('ed-prompt');
+      if(t){ t.value = texto; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 150) + 'px'; t.focus(); }
+    };
+    bar.appendChild(ed);
+    d.appendChild(bar);
+  } else { d.textContent = texto; }
   box.appendChild(d);
   box.scrollTop = box.scrollHeight;
   return d;
@@ -479,7 +495,23 @@ function edPensando(){
 }
 function edRefresh(){
   var f = document.getElementById('ed-frame');
-  if(f && EDITOR.id){ f.src = '/s/?id=' + EDITOR.id + '&t=' + Date.now(); }
+  if(f && EDITOR.id){ f.src = '/s/?id=' + EDITOR.id + '&edit=1&t=' + Date.now(); }
+}
+
+/* mostra/limpa a "parte selecionada" no preview */
+function edMostraSelecao(sel){
+  EDITOR.selecao = sel;
+  var box = document.getElementById('ed-selecao');
+  if(box){
+    box.style.display = 'flex';
+    box.innerHTML = 'Editando: <b>' + escapeHtml(sel.desc) + '</b><span class="x" title="Tirar seleção" onclick="edLimpaSelecao()">&times;</span>';
+  }
+  var hint = document.getElementById('ed-hint'); if(hint) hint.classList.add('hide');
+  var ta = document.getElementById('ed-prompt'); if(ta) ta.focus();
+}
+function edLimpaSelecao(){
+  EDITOR.selecao = null;
+  var box = document.getElementById('ed-selecao'); if(box){ box.style.display = 'none'; box.innerHTML = ''; }
 }
 async function edSalvar(role, content){
   try{
@@ -502,6 +534,12 @@ async function initEditor(){
 
   var box = document.getElementById('ed-msgs');
   if(box) box.innerHTML = '';
+
+  // escuta o clique numa parte do site (vem do iframe /s/?edit=1)
+  window.addEventListener('message', function(ev){
+    var d = ev.data;
+    if(d && d.mistto === 'select' && d.desc){ edMostraSelecao(d); }
+  });
 
   // Enter envia (Shift+Enter quebra linha) + campo cresce conforme digita
   var ta = document.getElementById('ed-prompt');
@@ -660,10 +698,18 @@ async function enviarEdicao(){
   if(EDITOR.fase === 'gerando'){ return; }
   if(!EDITOR.id){ return; }
 
-  var conteudo = instr + notaAnexo;
+  var ctxSel = '';
+  if(EDITOR.selecao){
+    ctxSel = 'Foque APENAS nesta parte do site: ' + EDITOR.selecao.desc
+      + (EDITOR.selecao.text ? (' (que contém o texto "' + EDITOR.selecao.text + '")') : '')
+      + '. Não mexa no resto. Pedido: ';
+    visivel = '(sobre "' + (EDITOR.selecao.text || EDITOR.selecao.tag) + '") ' + visivel;
+  }
+  var conteudo = ctxSel + instr + notaAnexo;
   edAddMsg(visivel, 'user');
   edSalvar('user', conteudo);
   edLimpaAnexo();
+  edLimpaSelecao();
   ta.value = ''; ta.style.height = 'auto';
   aplicarEdicao(conteudo, false);
 }
@@ -719,3 +765,19 @@ async function togglePub(){
     edAddMsg(novo ? 'Seu site voltou pro ar.' : 'Tirei seu site do ar. Só você consegue vê-lo agora.', 'ai');
   }catch(e){ edAddMsg('Não consegui mudar o status agora.', 'err'); }
 }
+
+/* ===== Tema claro/escuro (botão sol/lua no nav) ===== */
+var SVG_SOL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+var SVG_LUA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+function montaTema(){
+  if(document.getElementById('tema-btn')) return;
+  var host = document.querySelector('.nav-in') || document.querySelector('.ed-chat-top');
+  if(!host) return;
+  var b = document.createElement('button');
+  b.id = 'tema-btn'; b.className = 'tema-btn'; b.type = 'button';
+  b.setAttribute('aria-label', 'Alternar tema claro/escuro');
+  function ic(){ b.innerHTML = document.documentElement.classList.contains('dark') ? SVG_SOL : SVG_LUA; }
+  b.onclick = function(){ var d = document.documentElement.classList.toggle('dark'); try{ localStorage.setItem('mistto-tema', d ? 'dark' : 'claro'); }catch(e){} ic(); };
+  ic(); host.appendChild(b);
+}
+if(document.readyState !== 'loading'){ montaTema(); } else { document.addEventListener('DOMContentLoaded', montaTema); }
