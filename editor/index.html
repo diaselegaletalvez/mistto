@@ -24,18 +24,25 @@
 
     <div class="ed-input">
       <div class="ed-composer">
+        <div id="ed-anexo" class="ed-anexo" style="display:none"></div>
         <textarea id="ed-prompt" rows="1" placeholder="Escreva uma mensagem…"></textarea>
         <div class="ed-composer-bar">
-          <select id="ed-provider" class="ed-prov" aria-label="Escolher IA">
-            <option value="gemini">IA: Gemini</option>
-            <option value="groq">IA: Groq</option>
-            <option value="cerebras">IA: Cerebras</option>
-            <option value="openrouter">IA: OpenRouter</option>
-          </select>
-          <button id="ed-send" class="ed-send-btn" aria-label="Enviar" onclick="enviarEdicao()">
+          <div class="ed-left">
+            <button class="ed-attach" aria-label="Anexar imagem" title="Anexar imagem" onclick="edAnexar()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            </button>
+            <select id="ed-provider" class="ed-prov" aria-label="Escolher IA">
+              <option value="gemini">IA: Gemini</option>
+              <option value="groq">IA: Groq</option>
+              <option value="cerebras">IA: Cerebras</option>
+              <option value="openrouter">IA: OpenRouter</option>
+            </select>
+          </div>
+          <button id="ed-send" class="ed-send-btn" aria-label="Enviar" onclick="edSendOrStop()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
           </button>
         </div>
+        <input type="file" id="ed-file" accept="image/*" style="display:none" onchange="edArquivoEscolhido(event)">
       </div>
     </div>
   </aside>

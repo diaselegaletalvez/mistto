@@ -402,10 +402,65 @@ function traduzGerar(data, status){
 }
 
 /* ===================== EDITOR (chat + preview) ===================== */
-var EDITOR = { id:null, slug:null, publicado:true, fase:'edicao', nome:'', provider:'gemini', msgs:[] };
+var EDITOR = { id:null, slug:null, publicado:true, fase:'edicao', nome:'', provider:'gemini', msgs:[], gerando:false, abort:null, ultimaInstr:'', anexo:null };
+
+var SVG_SETA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>';
+var SVG_STOP = '<svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor"/></svg>';
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; });
+}
+/* botão enviar vira "parar" enquanto gera */
+function edBusy(on){
+  EDITOR.gerando = on;
+  var b = document.getElementById('ed-send');
+  if(b){ b.innerHTML = on ? SVG_STOP : SVG_SETA; b.setAttribute('aria-label', on ? 'Parar' : 'Enviar'); b.disabled = false; }
+}
+function edSendOrStop(){ if(EDITOR.gerando){ edParar(); } else { enviarEdicao(); } }
+function edParar(){ if(EDITOR.abort){ try{ EDITOR.abort.abort(); }catch(e){} } }
+function edAbortado(e){ return e && (e.name === 'AbortError' || /abort/i.test(String(e && e.message))); }
+
+/* barra de ações abaixo de uma resposta da Mistto */
+function edTools(bubble, texto, comRegenerar){
+  if(!bubble) return;
+  var bar = document.createElement('div'); bar.className = 'ed-tools';
+  var cop = document.createElement('button'); cop.textContent = 'Copiar';
+  cop.onclick = function(){ try{ navigator.clipboard.writeText(texto); cop.textContent = 'Copiado!'; setTimeout(function(){ cop.textContent = 'Copiar'; }, 1500); }catch(e){} };
+  bar.appendChild(cop);
+  if(comRegenerar){
+    var reg = document.createElement('button'); reg.textContent = 'Regenerar';
+    reg.onclick = function(){ if(EDITOR.gerando || !EDITOR.ultimaInstr) return; aplicarEdicao(EDITOR.ultimaInstr, true); };
+    bar.appendChild(reg);
+  }
+  bubble.appendChild(bar);
+}
+
+/* anexar imagem: sobe pro Storage e guarda a URL pra usar no próximo pedido */
+function edAnexar(){ var f = document.getElementById('ed-file'); if(f) f.click(); }
+function edLimpaAnexo(){
+  EDITOR.anexo = null;
+  var a = document.getElementById('ed-anexo'); if(a){ a.style.display = 'none'; a.innerHTML = ''; }
+  var f = document.getElementById('ed-file'); if(f) f.value = '';
+}
+async function edArquivoEscolhido(ev){
+  var file = ev && ev.target && ev.target.files && ev.target.files[0];
+  if(!file) return;
+  if(!/^image\//.test(file.type)){ alert('Por enquanto dá pra anexar só imagens.'); return; }
+  if(file.size > 5 * 1024 * 1024){ alert('Imagem muito grande (máx 5 MB).'); return; }
+  var box = document.getElementById('ed-anexo');
+  if(box){ box.style.display = 'flex'; box.innerHTML = '<span>Enviando imagem…</span>'; }
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    if(!session){ location.href = '/login/'; return; }
+    var ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g,'');
+    var path = session.user.id + '/' + Date.now() + '.' + ext;
+    var up = await db.storage.from('site-uploads').upload(path, file, { upsert: true, contentType: file.type });
+    if(up.error){ if(box){ box.innerHTML = '<span style="color:#d9534f">Não consegui subir a imagem. (o bucket site-uploads existe?)</span><span class="x" onclick="edLimpaAnexo()">&times;</span>'; } return; }
+    var pub = db.storage.from('site-uploads').getPublicUrl(path);
+    var url = pub && pub.data && pub.data.publicUrl;
+    EDITOR.anexo = { url: url, name: file.name };
+    if(box){ box.innerHTML = '<img src="' + url + '" alt=""><span>' + escapeHtml(file.name) + '</span><span class="x" title="Remover" onclick="edLimpaAnexo()">&times;</span>'; }
+  }catch(e){ if(box){ box.innerHTML = '<span style="color:#d9534f">Erro ao anexar.</span><span class="x" onclick="edLimpaAnexo()">&times;</span>'; } }
 }
 function edAddMsg(texto, tipo){
   var box = document.getElementById('ed-msgs');
@@ -507,42 +562,43 @@ async function initEditorExistente(session, id, qs){
 
 /* um passo da entrevista: pergunta a próxima coisa OU decide gerar */
 async function entrevistaPasso(){
-  var btn = document.getElementById('ed-send'); if(btn) btn.disabled = true;
   var pensando = edPensando();
+  EDITOR.abort = new AbortController();
+  edBusy(true);
   try{
     var { data: { session } } = await db.auth.getSession();
     if(!session){ location.href = '/login/'; return; }
     var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
-      body: JSON.stringify({ entrevista:true, nome:EDITOR.nome, messages:EDITOR.msgs, provider:EDITOR.provider, access_token:session.access_token })
+      body: JSON.stringify({ entrevista:true, nome:EDITOR.nome, messages:EDITOR.msgs, provider:EDITOR.provider, access_token:session.access_token }),
+      signal: EDITOR.abort.signal
     });
     var data = await res.json();
     if(data.pronto){
       var m1 = 'Perfeito! Vou montar seu site agora — leva alguns segundos.';
       if(pensando){ pensando.innerHTML = '<span class="who">Mistto</span>' + m1; }
       EDITOR.msgs.push({ role:'assistant', content:m1 });
-      gerarDoResumo(data.resumo);
+      await gerarDoResumo(data.resumo);
     } else if(data.pergunta){
-      if(pensando){ pensando.innerHTML = '<span class="who">Mistto</span>' + escapeHtml(data.pergunta); }
+      if(pensando){ pensando.innerHTML = '<span class="who">Mistto</span>' + escapeHtml(data.pergunta); edTools(pensando, data.pergunta, false); }
       EDITOR.msgs.push({ role:'assistant', content:data.pergunta });
-      if(btn) btn.disabled = false;
       var i = document.getElementById('ed-prompt'); if(i) i.focus();
     } else {
       if(pensando){ pensando.className = 'msg err'; pensando.textContent = traduzGerar(data, res.status); }
-      if(btn) btn.disabled = false;
     }
   }catch(e){
-    if(pensando){ pensando.className = 'msg err'; pensando.textContent = 'Erro na conversa. Tente de novo.'; }
-    if(btn) btn.disabled = false;
-  }
+    if(edAbortado(e)){ if(pensando){ pensando.className = 'msg err'; pensando.textContent = 'Cancelado.'; } }
+    else if(pensando){ pensando.className = 'msg err'; pensando.textContent = 'Erro na conversa. Tente de novo.'; }
+  }finally{ edBusy(false); }
 }
 
 /* com o resumo pronto, gera o site de fato e entra no modo edição */
 async function gerarDoResumo(resumo){
   EDITOR.fase = 'gerando';
   var loading = document.getElementById('ed-loading'); if(loading) loading.style.display = 'flex';
-  var btn = document.getElementById('ed-send'); if(btn) btn.disabled = true;
+  EDITOR.abort = new AbortController();
+  edBusy(true);
   try{
     var { data: { session } } = await db.auth.getSession();
     if(!session){ location.href = '/login/'; return; }
@@ -550,7 +606,8 @@ async function gerarDoResumo(resumo){
     var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
-      body: JSON.stringify({ prompt: prompt, nome: EDITOR.nome, provider:EDITOR.provider, access_token:session.access_token })
+      body: JSON.stringify({ prompt: prompt, nome: EDITOR.nome, provider:EDITOR.provider, access_token:session.access_token }),
+      signal: EDITOR.abort.signal
     });
     var data = await res.json();
     if(data.id){
@@ -571,62 +628,79 @@ async function gerarDoResumo(resumo){
       EDITOR.fase = 'entrevista';
       edAddMsg(traduzGerar(data, res.status), 'err');
     }
-  }catch(e){ EDITOR.fase = 'entrevista'; edAddMsg('Erro ao montar o site. Tente de novo.', 'err'); }
+  }catch(e){
+    EDITOR.fase = 'entrevista';
+    if(edAbortado(e)){ edAddMsg('Geração cancelada. Me diga de novo o que quer e eu monto.', 'err'); }
+    else{ edAddMsg('Erro ao montar o site. Tente de novo.', 'err'); }
+  }
   finally{
     var l = document.getElementById('ed-loading'); if(l) l.style.display = 'none';
-    var b = document.getElementById('ed-send'); if(b) b.disabled = false;
+    edBusy(false);
   }
 }
 
 async function enviarEdicao(){
+  if(EDITOR.gerando){ return; }
   var ta = document.getElementById('ed-prompt');
   var instr = ta ? ta.value.trim() : '';
-  if(!instr){ return; }
+  var temAnexo = !!(EDITOR.anexo && EDITOR.anexo.url);
+  if(!instr && !temAnexo){ return; }
+  var notaAnexo = temAnexo ? ('\n\n(Imagem enviada pelo dono pra usar no site, coloque num <img>: ' + EDITOR.anexo.url + ')') : '';
+  var visivel = (instr || 'Usar a imagem que anexei') + (temAnexo ? ' (imagem anexada)' : '');
 
   // fase de entrevista: cada envio é uma resposta às perguntas da Mistto
   if(EDITOR.fase === 'entrevista'){
-    edAddMsg(instr, 'user');
-    EDITOR.msgs.push({ role:'user', content:instr });
+    edAddMsg(visivel, 'user');
+    EDITOR.msgs.push({ role:'user', content: instr + notaAnexo });
+    edLimpaAnexo();
     ta.value = ''; ta.style.height = 'auto';
     entrevistaPasso();
     return;
   }
-  if(EDITOR.fase === 'gerando'){ return; }        // já está montando, ignora
-
-  // fase de edição: o site já existe, cada envio é uma alteração
+  if(EDITOR.fase === 'gerando'){ return; }
   if(!EDITOR.id){ return; }
-  var btn = document.getElementById('ed-send');
+
+  var conteudo = instr + notaAnexo;
+  edAddMsg(visivel, 'user');
+  edSalvar('user', conteudo);
+  edLimpaAnexo();
+  ta.value = ''; ta.style.height = 'auto';
+  aplicarEdicao(conteudo, false);
+}
+
+/* aplica uma instrução de edição (usada no envio normal e no "Regenerar") */
+async function aplicarEdicao(instr, regen){
+  if(EDITOR.gerando || !EDITOR.id){ return; }
+  EDITOR.ultimaInstr = instr;
   var loading = document.getElementById('ed-loading');
-
-  edAddMsg(instr, 'user');
-  edSalvar('user', instr);
-  ta.value = '';
   var pensando = edPensando();
-  if(btn){ btn.disabled = true; }
+  EDITOR.abort = new AbortController();
+  edBusy(true);
   if(loading){ loading.style.display = 'flex'; }
-
   try{
     var { data: { session } } = await db.auth.getSession();
     if(!session){ location.href = '/login/'; return; }
     var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
-      body: JSON.stringify({ site_id: EDITOR.id, prompt: instr, provider: EDITOR.provider, access_token: session.access_token })
+      body: JSON.stringify({ site_id: EDITOR.id, prompt: instr, provider: EDITOR.provider, access_token: session.access_token }),
+      signal: EDITOR.abort.signal
     });
     var data = await res.json();
     if(data.id){
-      var okMsg = 'Feito! Atualizei a prévia ao lado.';
-      if(pensando){ pensando.innerHTML = '<span class="who">Mistto</span>' + okMsg; }
+      var okMsg = regen ? 'Regenerei — dá uma olhada na prévia.' : 'Feito! Atualizei a prévia ao lado.';
+      if(pensando){ pensando.innerHTML = '<span class="who">Mistto</span>' + okMsg; edTools(pensando, okMsg, true); }
       edSalvar('assistant', okMsg);
       edRefresh();
     } else {
       if(pensando){ pensando.className = 'msg err'; pensando.textContent = traduzGerar(data, res.status); }
     }
   }catch(e){
-    if(pensando){ pensando.className = 'msg err'; pensando.textContent = 'Erro ao aplicar a mudança. Tente de novo.'; }
+    if(edAbortado(e)){ if(pensando){ pensando.className = 'msg err'; pensando.textContent = 'Cancelado.'; } }
+    else if(pensando){ pensando.className = 'msg err'; pensando.textContent = 'Erro ao aplicar a mudança. Tente de novo.'; }
   }finally{
-    if(btn){ btn.disabled = false; }
     if(loading){ loading.style.display = 'none'; }
+    edBusy(false);
   }
 }
 
