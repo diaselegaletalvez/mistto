@@ -75,8 +75,14 @@ async function initPainel(){
   var cota = COTAS[planoAtual] || 500;
   var elC = document.getElementById('p-cota');
   if(elC) elC.textContent = cota.toLocaleString('pt-BR');
-  // barra de uso de tokens (uso ainda não é rastreado → 0% por enquanto)
+  // barra de uso de tokens (uso REAL deste mês)
   var usados = 0;
+  try{
+    var _d = new Date();
+    var _inicio = new Date(Date.UTC(_d.getUTCFullYear(), _d.getUTCMonth(), 1)).toISOString();
+    var { data: usos } = await db.from('token_usage').select('tokens').eq('user_id', u.id).gte('created_at', _inicio);
+    if(usos) usados = usos.reduce(function(a,r){ return a + (r.tokens||0); }, 0);
+  }catch(e){}
   var elU = document.getElementById('p-usados');
   if(elU) elU.textContent = usados.toLocaleString('pt-BR');
   var bar = document.getElementById('tok-bar-fill');
@@ -133,6 +139,89 @@ async function apagarSite(id){
   if(!confirm('Apagar este site de vez? Essa ação não tem volta.')) return;
   try{ await db.from('mistto_sites').delete().eq('id', id); location.reload(); }
   catch(e){ alert('Não consegui apagar agora.'); }
+}
+
+/* ===================== MINHA CONTA (/conta) ===================== */
+var CONTA = { refUrl: '' };
+function ctMsg(id, txt, ok){
+  var m = document.getElementById(id); if(!m) return;
+  m.style.color = ok ? 'var(--green)' : '#d9534f'; m.textContent = txt;
+}
+async function initConta(){
+  var { data: { session } } = await db.auth.getSession();
+  if(!session){ location.href = '/login/'; return; }
+  var u = session.user;
+  try{
+    var nome = (u.user_metadata && (u.user_metadata.nome || u.user_metadata.full_name)) || '';
+    var n = document.getElementById('ct-nome'); if(n) n.value = nome;
+    var e = document.getElementById('ct-email'); if(e) e.value = u.email || '';
+    var ie = document.getElementById('ct-info-email'); if(ie) ie.textContent = u.email || '-';
+    var ic = document.getElementById('ct-info-criada'); if(ic) ic.textContent = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '-';
+    // indicação (compartilhada com o Weblar): profiles.referral_code
+    try{
+      var { data: perfil } = await db.from('profiles').select('referral_code').eq('id', u.id).maybeSingle();
+      var code = perfil && perfil.referral_code;
+      var refEl = document.getElementById('ct-ref');
+      if(code){ CONTA.refUrl = 'https://weblar.app.br/cadastro/?ref=' + code; if(refEl) refEl.textContent = CONTA.refUrl; }
+      else if(refEl){ refEl.textContent = 'Seu link de indicação aparece aqui.'; }
+    }catch(err){ var r=document.getElementById('ct-ref'); if(r) r.textContent = 'Seu link de indicação aparece aqui.'; }
+    document.getElementById('ct-load').style.display = 'none';
+    document.getElementById('ct').style.display = 'block';
+  }catch(e){ document.getElementById('ct-load').textContent = 'Não consegui carregar sua conta agora.'; }
+}
+async function salvarNomeConta(){
+  var nome = (document.getElementById('ct-nome').value || '').trim();
+  if(!nome){ ctMsg('ct-nome-msg', 'Escreva seu nome.', false); return; }
+  try{
+    var { error } = await db.auth.updateUser({ data: { nome: nome, full_name: nome } });
+    if(error){ ctMsg('ct-nome-msg', traduz(error.message), false); return; }
+    try{ var { data:{ user } } = await db.auth.getUser(); if(user) await db.from('profiles').update({ full_name: nome }).eq('id', user.id); }catch(e){}
+    ctMsg('ct-nome-msg', 'Nome salvo!', true);
+  }catch(e){ ctMsg('ct-nome-msg', 'Erro ao salvar.', false); }
+}
+async function trocarEmailConta(){
+  var email = (document.getElementById('ct-email').value || '').trim();
+  if(!email){ ctMsg('ct-email-msg', 'Escreva o novo e-mail.', false); return; }
+  try{
+    var { error } = await db.auth.updateUser({ email: email });
+    if(error){ ctMsg('ct-email-msg', traduz(error.message), false); return; }
+    ctMsg('ct-email-msg', 'Enviamos um link de confirmação pro novo e-mail. A troca vale depois que você confirmar lá.', true);
+  }catch(e){ ctMsg('ct-email-msg', 'Erro ao trocar o e-mail.', false); }
+}
+async function redefinirSenhaConta(){
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    var email = session && session.user && session.user.email;
+    if(!email){ ctMsg('ct-senha-msg', 'Sessão expirada. Entre de novo.', false); return; }
+    var { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: 'https://weblar.app.br/nova-senha/' });
+    if(error){ ctMsg('ct-senha-msg', traduz(error.message), false); return; }
+    ctMsg('ct-senha-msg', 'Link enviado pro seu e-mail. Abra pra criar uma nova senha.', true);
+  }catch(e){ ctMsg('ct-senha-msg', 'Erro ao enviar o link.', false); }
+}
+async function sairDeTudo(){
+  try{ await db.auth.signOut({ scope: 'global' }); location.href = '/'; }
+  catch(e){ try{ await db.auth.signOut(); }catch(_){} location.href = '/'; }
+}
+async function copiarIndicacao(){
+  if(!CONTA.refUrl){ ctMsg('ct-ref-msg', 'Seu link ainda não está disponível.', false); return; }
+  try{ await navigator.clipboard.writeText(CONTA.refUrl); ctMsg('ct-ref-msg', 'Link copiado!', true); }
+  catch(e){ ctMsg('ct-ref-msg', 'Copie manualmente: ' + CONTA.refUrl, false); }
+}
+async function excluirContaMistto(){
+  if(!confirm('Isso vai apagar sua conta, sites e dados permanentemente (Mistto e Weblar). Você vai receber um e-mail de confirmação. Continuar?')) return;
+  var btn = document.getElementById('ct-excluir'); if(btn){ btn.disabled = true; btn.textContent = 'Enviando…'; }
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    var token = session && session.access_token;
+    if(!token){ alert('Sessão expirada. Entre de novo.'); return; }
+    var resp = await fetch(SUPABASE_URL + '/functions/v1/solicitar-exclusao-conta', {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + token }
+    });
+    var data = await resp.json().catch(function(){ return {}; });
+    if(!resp.ok){ alert(data.error || 'Não consegui enviar o e-mail de confirmação.'); return; }
+    alert('Enviamos um e-mail de confirmação. Clique no link pra concluir a exclusão.');
+  }catch(e){ alert('Erro de conexão. Tente de novo.'); }
+  finally{ if(btn){ btn.disabled = false; btn.textContent = 'Excluir minha conta'; } }
 }
 
 /* ===================== CONFIGURAÇÕES DO SITE (/config) ===================== */
@@ -303,6 +392,7 @@ async function gerarSite(){
 /* traduz o erro da function gerar-site pra algo acionável */
 function traduzGerar(data, status){
   var e = data && (data.error || '');
+  if(e === 'sem_tokens') return data.msg || 'Seus tokens do mês acabaram. Faça upgrade ou compre tokens avulsos.';
   if(e === 'ia_sem_resposta') return 'A IA não respondeu' + (data.detail ? ' — ' + data.detail : '') + '. Tente outro provedor no seletor.';
   if(e === 'db') return 'Erro ao salvar o site. A tabela existe? Rode o mistto-tudo.sql. (' + (data.detail || '') + ')';
   if(e === 'precisa estar logado') return 'Sua sessão expirou. Entre de novo.';

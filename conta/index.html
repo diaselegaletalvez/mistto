@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minha conta — Mistto</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a href="/" class="logo">Mis<b>tto</b></a>
+    <button class="nav-toggle" onclick="toggleNav()">☰</button>
+    <div class="nav-links">
+      <a href="/painel/">Painel</a>
+      <a href="/precos/">Planos</a>
+      <a href="https://weblar.app.br/painel/" target="_blank" rel="noopener">Painel Weblar</a>
+      <a href="#" onclick="doLogout();return false;">Sair</a>
+      <a href="/create/" class="btn btn-gold" style="padding:9px 18px;font-size:.9rem">Gerar</a>
+    </div>
+  </div>
+</nav>
+
+<section class="painel">
+  <div class="wrap" style="max-width:720px">
+    <a href="/painel/" style="color:#8a6a09;font-weight:600;font-size:.9rem">&larr; Voltar ao painel</a>
+    <h1 style="font-size:2rem;margin:12px 0 4px">Minha conta</h1>
+    <p class="hi" style="color:var(--muted)">Sua conta é a mesma no Mistto e no Weblar — o que mudar aqui vale nos dois.</p>
+
+    <div id="ct-load" style="color:var(--muted);margin-top:24px">Carregando…</div>
+
+    <div id="ct" style="display:none;margin-top:24px">
+      <!-- NOME -->
+      <div class="stat" style="margin-bottom:18px">
+        <div class="lbl">Nome</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+          <input id="ct-nome" type="text" placeholder="Seu nome" style="flex:1;min-width:200px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-family:'Inter';font-size:1rem;color:var(--ink);outline:none">
+          <button class="btn btn-gold" onclick="salvarNomeConta()">Salvar</button>
+        </div>
+        <div id="ct-nome-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>
+      </div>
+
+      <!-- E-MAIL -->
+      <div class="stat" style="margin-bottom:18px">
+        <div class="lbl">E-mail</div>
+        <p style="color:var(--muted);font-size:.9rem;margin:8px 0 4px">Ao trocar, enviamos um link de confirmação pro novo e-mail. A troca só vale depois de confirmar lá.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+          <input id="ct-email" type="email" placeholder="voce@email.com" style="flex:1;min-width:200px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-family:'Inter';font-size:1rem;color:var(--ink);outline:none">
+          <button class="btn btn-ghost" onclick="trocarEmailConta()">Trocar e-mail</button>
+        </div>
+        <div id="ct-email-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>
+      </div>
+
+      <!-- SENHA -->
+      <div class="stat" style="margin-bottom:18px">
+        <div class="lbl">Senha</div>
+        <p style="color:var(--muted);font-size:.9rem;margin:8px 0 10px">Enviamos um link seguro pro seu e-mail pra você criar uma nova senha.</p>
+        <button class="btn btn-ghost" onclick="redefinirSenhaConta()" style="padding:10px 18px">Redefinir minha senha</button>
+        <div id="ct-senha-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>
+      </div>
+
+      <!-- INDICAÇÃO -->
+      <div class="wecoins" style="margin-bottom:18px">
+        <div>
+          <span class="tag">Indique e ganhe</span>
+          <h2 style="margin-top:14px">Ganhe 5% indicando</h2>
+          <p>Compartilhe seu link. Cada pessoa que se cadastrar por ele te dá 5% de desconto — vale no Weblar e no Mistto.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px">
+            <div id="ct-ref" style="flex:1;min-width:220px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-size:.85rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">carregando…</div>
+            <button class="btn btn-gold" onclick="copiarIndicacao()" style="padding:11px 18px">Copiar link</button>
+          </div>
+          <div id="ct-ref-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>
+        </div>
+        <div class="coin-vis">
+          <div class="coin-row"><div class="coin-ic" id="ct-ref-num">0</div><div><b>Descontos disponíveis</b><span>de 5% cada, no próximo pedido</span></div></div>
+        </div>
+      </div>
+
+      <!-- INFO + SEGURANÇA -->
+      <div class="painel-grid" style="margin-bottom:18px">
+        <div class="stat">
+          <div class="lbl">Informações da conta</div>
+          <div class="cta" style="color:var(--ink);margin-top:10px;font-size:.9rem">
+            <div>E-mail: <span id="ct-info-email">-</span></div>
+            <div style="margin-top:6px">Criada em: <span id="ct-info-criada">-</span></div>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Segurança</div>
+          <p style="color:var(--muted);font-size:.85rem;margin:8px 0 10px">Usou o computador de outra pessoa? Encerre todas as sessões.</p>
+          <button class="btn btn-ghost" onclick="sairDeTudo()" style="padding:9px 16px;font-size:.85rem">Sair de todos os dispositivos</button>
+        </div>
+      </div>
+
+      <!-- ZONA DE PERIGO -->
+      <div class="stat" style="border-color:#f2c4c0">
+        <div class="lbl" style="color:#b23b33">Zona de perigo</div>
+        <p style="color:var(--muted);font-size:.9rem;margin:8px 0 12px">Excluir a conta apaga permanentemente seus dados no Mistto e no Weblar. Enviamos um e-mail de confirmação antes.</p>
+        <button class="btn btn-ghost" id="ct-excluir" onclick="excluirContaMistto()" style="color:#d9534f;border-color:#d9534f;padding:9px 18px">Excluir minha conta</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/assets/auth.js"></script>
+<script>initConta();</script>
+</body>
+</html>

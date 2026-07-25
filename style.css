@@ -365,3 +365,8 @@ footer{border-top:1px solid var(--line);padding:48px 0 34px;margin-top:40px;back
 .pv-inner .da.on{opacity:1;transform:none}
 .pv-cta.plain{background:#ece4d3;color:#8a8577;transition:background .5s,color .5s}
 .demo-t .ast-typing span{background:#8a6a09}
+
+/* ===== PÍLULAS DE PLANO (página de recursos) ===== */
+.pls{display:inline-flex;gap:4px;flex-shrink:0}
+.pl{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--gold);color:#251a02;font-size:.7rem;font-weight:700;font-style:normal;font-family:'Inter',sans-serif}
+.cat li .pls{margin-top:1px}
