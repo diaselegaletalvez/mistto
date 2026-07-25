@@ -26,6 +26,17 @@
     <div class="ed-input">
       <div class="ed-composer">
         <div id="ed-selecao" class="ed-selecao" style="display:none"></div>
+        <div id="ed-acoes" class="ed-acoes" style="display:none">
+          <button type="button" class="ed-acao" onclick="edAcao('texto')" title="Editar o texto">Texto</button>
+          <button type="button" class="ed-acao" onclick="edAcao('maior')" title="Aumentar">A+</button>
+          <button type="button" class="ed-acao" onclick="edAcao('menor')" title="Diminuir">A−</button>
+          <label class="ed-acao ed-acao-cor" title="Cor do texto">Cor<input type="color" id="ed-cor" onchange="edAcao('cor', this.value)"></label>
+          <label class="ed-acao ed-acao-cor" title="Cor de fundo">Fundo<input type="color" id="ed-fundo" onchange="edAcao('fundo', this.value)"></label>
+          <button type="button" class="ed-acao" onclick="edAcao('cantos','14px')" title="Arredondar cantos">Cantos</button>
+          <button type="button" class="ed-acao" onclick="edAcao('cima')" title="Mover pra cima">↑</button>
+          <button type="button" class="ed-acao" onclick="edAcao('baixo')" title="Mover pra baixo">↓</button>
+          <button type="button" class="ed-acao ed-acao-del" onclick="edAcao('apagar')" title="Apagar">Apagar</button>
+        </div>
         <div id="ed-anexo" class="ed-anexo" style="display:none"></div>
         <textarea id="ed-prompt" rows="1" placeholder="Escreva uma mensagem…"></textarea>
         <div class="ed-composer-bar">

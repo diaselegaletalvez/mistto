@@ -534,14 +534,49 @@ function edMostraSelecao(sel){
   var box = document.getElementById('ed-selecao');
   if(box){
     box.style.display = 'flex';
-    box.innerHTML = 'Editando: <b>' + escapeHtml(sel.desc) + '</b><span class="x" title="Tirar seleção" onclick="edLimpaSelecao()">&times;</span>';
+    box.innerHTML = 'Selecionado: <b>' + escapeHtml(sel.desc) + '</b><span class="x" title="Tirar seleção" onclick="edLimpaSelecao()">&times;</span>';
   }
+  var acoes = document.getElementById('ed-acoes'); if(acoes) acoes.style.display = 'flex';
+  var c = document.getElementById('ed-cor'); if(c && sel.cor) c.value = sel.cor;
+  var f = document.getElementById('ed-fundo'); if(f && sel.fundo) f.value = sel.fundo;
   var hint = document.getElementById('ed-hint'); if(hint) hint.classList.add('hide');
-  var ta = document.getElementById('ed-prompt'); if(ta) ta.focus();
+  var ta = document.getElementById('ed-prompt'); if(ta){ ta.placeholder = 'Peça uma mudança nessa parte… ou use os botões acima'; }
 }
 function edLimpaSelecao(){
   EDITOR.selecao = null;
   var box = document.getElementById('ed-selecao'); if(box){ box.style.display = 'none'; box.innerHTML = ''; }
+  var acoes = document.getElementById('ed-acoes'); if(acoes) acoes.style.display = 'none';
+  var ta = document.getElementById('ed-prompt'); if(ta){ ta.placeholder = 'Escreva uma mensagem…'; }
+}
+
+/* ação direta na parte selecionada — instantânea e sem gastar tokens */
+function edAcao(action, value){
+  var f = document.getElementById('ed-frame');
+  if(!f || !f.contentWindow || !EDITOR.selecao) return;
+  if(action === 'apagar'){
+    if(!confirm('Apagar essa parte do site?')) return;
+  }
+  try{ f.contentWindow.postMessage({ mistto:'act', action: action, value: value }, '*'); }catch(e){}
+}
+
+/* salva o HTML editado direto no banco (sem IA) */
+async function edSalvarHtmlDireto(html){
+  if(!EDITOR.id || !html) return;
+  try{
+    await db.from('mistto_sites').update({ html: html }).eq('id', EDITOR.id);
+    edToast('Alteração salva');
+  }catch(e){ edToast('Não consegui salvar a alteração', true); }
+}
+
+/* aviso rápido no canto do preview */
+function edToast(txt, erro){
+  var wrap = document.querySelector('.ed-frame-wrap'); if(!wrap) return;
+  var t = document.createElement('div');
+  t.className = 'ed-toast' + (erro ? ' erro' : '');
+  t.textContent = txt;
+  wrap.appendChild(t);
+  setTimeout(function(){ t.classList.add('show'); }, 10);
+  setTimeout(function(){ t.classList.remove('show'); setTimeout(function(){ t.remove(); }, 300); }, 1800);
 }
 async function edSalvar(role, content){
   try{
@@ -565,10 +600,12 @@ async function initEditor(){
   var box = document.getElementById('ed-msgs');
   if(box) box.innerHTML = '';
 
-  // escuta o clique numa parte do site (vem do iframe /s/?edit=1)
+  // escuta o iframe /s/?edit=1: seleção de parte + ações diretas (apagar/mover/cor…)
   window.addEventListener('message', function(ev){
-    var d = ev.data;
-    if(d && d.mistto === 'select' && d.desc){ edMostraSelecao(d); }
+    var d = ev.data; if(!d || !d.mistto) return;
+    if(d.mistto === 'select' && d.desc){ edMostraSelecao(d); }
+    else if(d.mistto === 'saved' && d.html){ edSalvarHtmlDireto(d.html); }
+    else if(d.mistto === 'cleared'){ edLimpaSelecao(); }
   });
 
   // Enter envia (Shift+Enter quebra linha) + campo cresce conforme digita
