@@ -92,21 +92,23 @@ async function initPainel(){
 
   // lista os sites do usuário (com ações: ver / tirar do ar / apagar)
   try{
-    var { data: meus } = await db.from('mistto_sites').select('id,prompt,created_at,published').eq('user_id', u.id).order('created_at', { ascending:false });
+    var { data: meus } = await db.from('mistto_sites').select('id,nome,prompt,created_at,published').eq('user_id', u.id).order('created_at', { ascending:false });
     var area = document.getElementById('sites-area');
     if(area && meus && meus.length){
       var bs = 'padding:7px 14px;font-size:.82rem';
+      var esc = function(x){ return String(x||'').replace(/[<>]/g,''); };
       var h = '<div class="gallery">';
       meus.forEach(function(s){
-        var t = (s.prompt || 'Site sem descrição').replace(/[<>]/g,'').slice(0,70);
+        var titulo = esc(s.nome) || 'Seu site';
+        var t = esc(s.prompt || 'Site sem descrição').slice(0,70);
         var pub = s.published !== false;
         h += '<div class="demo-card">'
           + '<div class="demo-thumb" style="background:linear-gradient(135deg,#EFC03A,#B5860F);color:#251a02">Mistto</div>'
-          + '<div class="info"><h3>Seu site ' + (pub ? '' : '<span class="soon">fora do ar</span>') + '</h3><p>' + t + '</p>'
+          + '<div class="info"><h3>' + titulo + (pub ? '' : ' <span class="soon">fora do ar</span>') + '</h3><p>' + t + '</p>'
           + '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">'
-          + '<a class="btn btn-ghost" style="' + bs + '" href="/s/?id=' + s.id + '" target="_blank" rel="noopener">Ver</a>'
-          + '<button class="btn btn-ghost" style="' + bs + '" onclick="toggleSite(\'' + s.id + '\',' + pub + ')">' + (pub ? 'Tirar do ar' : 'Publicar') + '</button>'
-          + '<button class="btn btn-ghost" style="' + bs + ';color:#d9534f;border-color:#d9534f" onclick="apagarSite(\'' + s.id + '\')">Apagar</button>'
+          + '<a class="btn btn-ghost" style="' + bs + '" href="/s/?id=' + s.id + '" target="_blank" rel="noopener">Abrir</a>'
+          + '<a class="btn btn-ghost" style="' + bs + '" href="/editor/?id=' + s.id + '">Editar</a>'
+          + '<a class="btn btn-ghost" style="' + bs + '" href="/config/?id=' + s.id + '">Configurar</a>'
           + '</div></div></div>';
       });
       h += '</div>';
@@ -122,7 +124,7 @@ function irCriar(){
   location.href = '/create/' + (v ? ('?p=' + encodeURIComponent(v)) : '');
 }
 
-/* ---- Gestão dos sites ---- */
+/* ---- Gestão dos sites (atalhos do painel) ---- */
 async function toggleSite(id, pub){
   try{ await db.from('mistto_sites').update({ published: !pub }).eq('id', id); location.reload(); }
   catch(e){ alert('Não consegui mudar o status agora.'); }
@@ -131,6 +133,116 @@ async function apagarSite(id){
   if(!confirm('Apagar este site de vez? Essa ação não tem volta.')) return;
   try{ await db.from('mistto_sites').delete().eq('id', id); location.reload(); }
   catch(e){ alert('Não consegui apagar agora.'); }
+}
+
+/* ===================== CONFIGURAÇÕES DO SITE (/config) ===================== */
+var CFG = { id:null, slug:null, publicado:true };
+
+function cfgSlugLimpo(v){
+  return String(v||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+function cfgLink(slug){ return 'https://mistto.weblar.app.br/s/?s=' + encodeURIComponent(slug); }
+function cfgPreview(){
+  var s = cfgSlugLimpo(document.getElementById('cfg-slug').value);
+  var a = document.getElementById('cfg-link');
+  if(a){ a.textContent = s ? cfgLink(s) : '—'; a.href = s ? cfgLink(s) : '#'; }
+}
+function cfgMsg(id, txt, ok){
+  var m = document.getElementById(id); if(!m) return;
+  m.style.color = ok ? 'var(--green)' : '#d9534f'; m.textContent = txt;
+}
+function cfgStatus(){
+  var s = document.getElementById('cfg-status'), b = document.getElementById('cfg-pub');
+  if(s) s.textContent = CFG.publicado ? 'No ar' : 'Fora do ar';
+  if(b) b.textContent = CFG.publicado ? 'Tirar do ar' : 'Publicar';
+}
+
+async function initConfig(){
+  var { data: { session } } = await db.auth.getSession();
+  if(!session){ location.href = '/login/'; return; }
+  var id = new URLSearchParams(location.search).get('id');
+  if(!id){ location.href = '/painel/'; return; }
+  CFG.id = id;
+  try{
+    var { data: site } = await db.from('mistto_sites').select('id,nome,slug,published,user_id').eq('id', id).maybeSingle();
+    if(!site || site.user_id !== session.user.id){
+      document.getElementById('cfg-load').textContent = 'Não encontrei esse site na sua conta.';
+      return;
+    }
+    CFG.slug = site.slug; CFG.publicado = site.published !== false;
+    document.getElementById('cfg-nome').value = site.nome || '';
+    document.getElementById('cfg-slug').value = site.slug || '';
+    cfgPreview(); cfgStatus();
+    var open = document.getElementById('cfg-open'); if(open) open.href = '/s/?id=' + id;
+    var edit = document.getElementById('cfg-edit'); if(edit) edit.href = '/editor/?id=' + id;
+    document.getElementById('cfg-load').style.display = 'none';
+    document.getElementById('cfg').style.display = 'block';
+  }catch(e){ document.getElementById('cfg-load').textContent = 'Não consegui carregar as configurações agora.'; }
+}
+
+async function salvarNomeSite(){
+  if(!CFG.id) return;
+  var nome = document.getElementById('cfg-nome').value.trim();
+  try{
+    var { error } = await db.from('mistto_sites').update({ nome: nome || null }).eq('id', CFG.id);
+    if(error){ cfgMsg('cfg-nome-msg', 'Não consegui salvar agora.', false); return; }
+    cfgMsg('cfg-nome-msg', 'Nome salvo!', true);
+  }catch(e){ cfgMsg('cfg-nome-msg', 'Erro ao salvar.', false); }
+}
+
+async function salvarSlug(){
+  if(!CFG.id) return;
+  var s = cfgSlugLimpo(document.getElementById('cfg-slug').value);
+  if(!s || s.length < 3){ cfgMsg('cfg-slug-msg', 'Use ao menos 3 letras/números (ex: meu-cafe).', false); return; }
+  document.getElementById('cfg-slug').value = s;
+  cfgPreview();
+  try{
+    var { error } = await db.from('mistto_sites').update({ slug: s }).eq('id', CFG.id);
+    if(error){
+      var dup = /duplicate|unique/i.test(error.message || '');
+      cfgMsg('cfg-slug-msg', dup ? 'Esse endereço já está em uso. Tente outro.' : 'Não consegui salvar agora.', false);
+      return;
+    }
+    CFG.slug = s;
+    cfgMsg('cfg-slug-msg', 'Endereço salvo! Seu site abre no link acima.', true);
+  }catch(e){ cfgMsg('cfg-slug-msg', 'Erro ao salvar.', false); }
+}
+
+async function cfgTogglePub(){
+  if(!CFG.id) return;
+  var novo = !CFG.publicado;
+  try{
+    var { error } = await db.from('mistto_sites').update({ published: novo }).eq('id', CFG.id);
+    if(error) return;
+    CFG.publicado = novo; cfgStatus();
+  }catch(e){}
+}
+
+async function apagarSiteCfg(){
+  if(!CFG.id) return;
+  if(!confirm('Apagar este site de vez? Essa ação não tem volta.')) return;
+  try{ await db.from('mistto_sites').delete().eq('id', CFG.id); location.href = '/painel/'; }
+  catch(e){ alert('Não consegui apagar agora.'); }
+}
+
+/* pedir subdomínio ou domínio próprio — cai na tabela + e-mail pro admin */
+async function solicitarDominio(tipo){
+  var inputId = (tipo === 'subdominio') ? 'cfg-sub' : 'cfg-dom';
+  var msgId = (tipo === 'subdominio') ? 'cfg-sub-msg' : 'cfg-dom-msg';
+  var el = document.getElementById(inputId);
+  var valor = el ? el.value.trim() : '';
+  if(!valor){ cfgMsg(msgId, 'Escreva o endereço que você quer.', false); return; }
+  if(tipo === 'subdominio'){ valor = cfgSlugLimpo(valor); if(el) el.value = valor; }
+  else { valor = valor.toLowerCase().replace(/^https?:\/\//,'').replace(/\/.*$/,'').trim(); if(el) el.value = valor; }
+  if(!valor){ cfgMsg(msgId, 'Endereço inválido.', false); return; }
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    if(!session){ location.href = '/login/'; return; }
+    var { error } = await db.from('domain_requests').insert({ site_id: CFG.id, user_id: session.user.id, tipo: tipo, valor: valor });
+    if(error){ cfgMsg(msgId, 'Não consegui enviar agora. Tente de novo.', false); return; }
+    cfgMsg(msgId, 'Pedido enviado! A gente te avisa por e-mail quando estiver no ar.', true);
+    if(el) el.value = '';
+  }catch(e){ cfgMsg(msgId, 'Erro ao enviar o pedido.', false); }
 }
 
 /* ---- Comprar plano / tokens (a partir do painel) ---- */
@@ -342,7 +454,7 @@ async function gerarDoResumo(resumo){
     var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
-      body: JSON.stringify({ prompt: prompt, provider:EDITOR.provider, access_token:session.access_token })
+      body: JSON.stringify({ prompt: prompt, nome: EDITOR.nome, provider:EDITOR.provider, access_token:session.access_token })
     });
     var data = await res.json();
     if(data.id){

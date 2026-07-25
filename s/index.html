@@ -12,10 +12,13 @@
 const SB_URL = "https://unsvccbzrrgnvzvdwwrz.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVuc3ZjY2J6cnJnbnZ6dmR3d3J6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0MzE0OTUsImV4cCI6MjEwMDAwNzQ5NX0.LI121gkIHkiplDTcolv6e6is6LxN0I1Ebmil5tJKRxY";
 (async function(){
-  var id = new URLSearchParams(location.search).get('id');
-  if(!id){ document.getElementById('load').textContent = 'Site não encontrado.'; return; }
+  var params = new URLSearchParams(location.search);
+  var id = params.get('id');
+  var slug = params.get('s');
+  if(!id && !slug){ document.getElementById('load').textContent = 'Site não encontrado.'; return; }
+  var filtro = id ? ('id=eq.' + encodeURIComponent(id)) : ('slug=eq.' + encodeURIComponent(slug));
   try{
-    var res = await fetch(SB_URL + '/rest/v1/mistto_sites?id=eq.' + encodeURIComponent(id) + '&select=html', {
+    var res = await fetch(SB_URL + '/rest/v1/mistto_sites?' + filtro + '&select=html', {
       headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
     });
     var rows = await res.json();

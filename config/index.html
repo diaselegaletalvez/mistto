@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configurações do site — Mistto</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a href="/" class="logo">Mis<b>tto</b></a>
+    <button class="nav-toggle" onclick="toggleNav()">☰</button>
+    <div class="nav-links">
+      <a href="/painel/">Painel</a>
+      <a href="/precos/">Planos</a>
+      <a href="#" onclick="doLogout();return false;">Sair</a>
+      <a href="/create/" class="btn btn-gold" style="padding:9px 18px;font-size:.9rem">Gerar</a>
+    </div>
+  </div>
+</nav>
+
+<section class="painel">
+  <div class="wrap" style="max-width:720px">
+    <a href="/painel/" style="color:#8a6a09;font-weight:600;font-size:.9rem">&larr; Voltar ao painel</a>
+    <h1 style="font-size:2rem;margin:12px 0 4px">Configurações do site</h1>
+    <p class="hi" style="color:var(--muted)">Nome, endereço, status e mais.</p>
+
+    <div id="cfg-load" style="color:var(--muted);margin-top:24px">Carregando…</div>
+
+    <div id="cfg" style="display:none;margin-top:24px;display:none">
+      <!-- NOME -->
+      <div class="stat" style="margin-bottom:18px">
+        <div class="lbl">Nome do site</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+          <input id="cfg-nome" type="text" placeholder="Ex: Café da Serra" style="flex:1;min-width:200px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-family:'Inter';font-size:1rem;color:var(--ink);outline:none">
+          <button class="btn btn-gold" onclick="salvarNomeSite()">Salvar</button>
+        </div>
+        <div id="cfg-nome-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>
+      </div>
+
+      <!-- ENDEREÇO / URL -->
+      <div class="stat" style="margin-bottom:18px">
+        <div class="lbl">Endereço do site</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;align-items:center">
+          <span style="color:var(--muted);font-size:.9rem">mistto.weblar.app.br/s/?s=</span>
+          <input id="cfg-slug" type="text" placeholder="meu-cafe" oninput="cfgPreview()" style="flex:1;min-width:160px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-family:'Inter';font-size:1rem;color:var(--ink);outline:none">
+          <button class="btn btn-gold" onclick="salvarSlug()">Salvar</button>
+        </div>
+        <div style="font-size:.82rem;color:var(--muted);margin-top:8px">Link público: <a id="cfg-link" href="#" target="_blank" style="color:#8a6a09;font-weight:600">—</a></div>
+        <div id="cfg-slug-msg" style="font-size:.85rem;margin-top:6px;min-height:18px"></div>
+      </div>
+
+      <!-- STATUS -->
+      <div class="stat" style="margin-bottom:18px">
+        <div class="lbl">Status</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:8px">
+          <span class="val" id="cfg-status" style="font-size:1.2rem">—</span>
+          <button class="btn btn-ghost" id="cfg-pub" onclick="cfgTogglePub()" style="padding:9px 18px">—</button>
+          <a class="btn btn-ghost" id="cfg-open" href="#" target="_blank" style="padding:9px 18px">Abrir</a>
+          <a class="btn btn-ghost" id="cfg-edit" href="#" style="padding:9px 18px">Editar no chat</a>
+        </div>
+      </div>
+
+      <!-- PEDIR SUBDOMÍNIO -->
+      <div class="stat" style="margin-bottom:18px">
+        <div class="lbl">Endereço próprio no Weblar</div>
+        <p style="color:var(--muted);font-size:.9rem;margin:8px 0 4px">Peça um endereço tipo <b>seunome.weblar.app.br</b>. A gente configura e coloca no ar pra você.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;align-items:center">
+          <input id="cfg-sub" type="text" placeholder="seunome" style="flex:1;min-width:160px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-family:'Inter';font-size:1rem;color:var(--ink);outline:none">
+          <span style="color:var(--muted);font-size:.9rem">.weblar.app.br</span>
+          <button class="btn btn-gold" onclick="solicitarDominio('subdominio')">Solicitar</button>
+        </div>
+        <div id="cfg-sub-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>
+      </div>
+
+      <!-- PEDIR DOMÍNIO PRÓPRIO -->
+      <div class="stat" style="margin-bottom:18px">
+        <div class="lbl">Domínio próprio</div>
+        <p style="color:var(--muted);font-size:.9rem;margin:8px 0 4px">Já tem um domínio (ex: <b>meucafe.com.br</b>)? Peça aqui que a gente te passa o passo a passo e conecta.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+          <input id="cfg-dom" type="text" placeholder="meucafe.com.br" style="flex:1;min-width:200px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-family:'Inter';font-size:1rem;color:var(--ink);outline:none">
+          <button class="btn btn-gold" onclick="solicitarDominio('proprio')">Solicitar</button>
+        </div>
+        <div id="cfg-dom-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>
+      </div>
+
+      <!-- APAGAR -->
+      <div class="stat" style="border-color:#f2c4c0">
+        <div class="lbl" style="color:#b23b33">Zona de perigo</div>
+        <p style="color:var(--muted);font-size:.9rem;margin:8px 0 12px">Apagar o site é permanente e não tem volta.</p>
+        <button class="btn btn-ghost" onclick="apagarSiteCfg()" style="color:#d9534f;border-color:#d9534f;padding:9px 18px">Apagar este site</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/assets/auth.js"></script>
+<script>initConfig();</script>
+</body>
+</html>
