@@ -50,6 +50,77 @@ async function doLogin(e){
 /* ---- Logout ---- */
 async function doLogout(){ await db.auth.signOut(); location.href = '/'; }
 
+/* ===================== LOGIN COM BIOMETRIA (WebAuthn / passkey local) =====================
+   Gate biométrico do aparelho (Touch ID / Face ID / Windows Hello) pra reentrar rápido.
+   Guarda a sessão neste aparelho e só libera após a verificação biométrica. */
+function _bufToB64url(buf){ var b=new Uint8Array(buf), s=''; for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function _b64urlToBuf(str){ str=String(str).replace(/-/g,'+').replace(/_/g,'/'); var pad=str.length%4; if(pad)str+='='.repeat(4-pad); var bin=atob(str), b=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i); return b.buffer; }
+function _rnd(n){ var a=new Uint8Array(n); crypto.getRandomValues(a); return a; }
+async function biometriaSuportada(){
+  if(!window.PublicKeyCredential || !navigator.credentials) return false;
+  try{ return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); }catch(e){ return false; }
+}
+function biometriaAtiva(){ return !!localStorage.getItem('mistto-bio'); }
+
+async function ativarBiometria(){
+  if(!(await biometriaSuportada())){ ctMsg('ct-bio-msg', 'Este aparelho não tem biometria compatível.', false); return; }
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    if(!session){ location.href = '/login/'; return; }
+    var cred = await navigator.credentials.create({ publicKey: {
+      challenge: _rnd(32),
+      rp: { name: 'Mistto', id: location.hostname },
+      user: { id: new TextEncoder().encode(session.user.id), name: session.user.email || 'usuario', displayName: session.user.email || 'usuário' },
+      pubKeyCredParams: [{ type:'public-key', alg:-7 }, { type:'public-key', alg:-257 }],
+      authenticatorSelection: { authenticatorAttachment:'platform', userVerification:'required', residentKey:'preferred' },
+      timeout: 60000, attestation: 'none'
+    }});
+    if(!cred){ ctMsg('ct-bio-msg', 'Não consegui ativar agora.', false); return; }
+    localStorage.setItem('mistto-bio', JSON.stringify({ credId: _bufToB64url(cred.rawId), email: session.user.email, at: session.access_token, rt: session.refresh_token }));
+    ctMsg('ct-bio-msg', 'Biometria ativada neste aparelho! Da próxima vez, é só o dedo/rosto.', true);
+    bioBotaoConta();
+  }catch(e){ ctMsg('ct-bio-msg', 'Ativação cancelada.', false); }
+}
+function desativarBiometria(){
+  localStorage.removeItem('mistto-bio');
+  ctMsg('ct-bio-msg', 'Biometria desativada neste aparelho.', true);
+  bioBotaoConta();
+}
+async function bioBotaoConta(){
+  var wrap = document.getElementById('ct-bio-wrap'); if(!wrap) return;
+  var sup = await biometriaSuportada();
+  if(!sup){ wrap.innerHTML = '<span style="color:var(--muted);font-size:.85rem">Este aparelho não tem biometria compatível.</span>'; return; }
+  var b = document.getElementById('ct-bio-btn');
+  if(b){ b.textContent = biometriaAtiva() ? 'Desativar biometria' : 'Ativar login com biometria';
+    b.setAttribute('onclick', biometriaAtiva() ? 'desativarBiometria()' : 'ativarBiometria()'); }
+}
+
+async function entrarComBiometria(){
+  var raw = localStorage.getItem('mistto-bio'); if(!raw){ return; }
+  var info; try{ info = JSON.parse(raw); }catch(e){ return; }
+  setMsg('Verificando biometria…', true);
+  try{
+    var assertion = await navigator.credentials.get({ publicKey: {
+      challenge: _rnd(32), rpId: location.hostname,
+      allowCredentials: [{ type:'public-key', id: _b64urlToBuf(info.credId) }],
+      userVerification: 'required', timeout: 60000
+    }});
+    if(!assertion){ setMsg('Biometria não reconhecida.', false); return; }
+    var { data, error } = await db.auth.setSession({ access_token: info.at, refresh_token: info.rt });
+    if(error || !data || !data.session){ setMsg('Sua sessão expirou. Entre com e-mail e senha uma vez (a biometria volta a valer depois).', false); return; }
+    info.at = data.session.access_token; info.rt = data.session.refresh_token;
+    localStorage.setItem('mistto-bio', JSON.stringify(info));
+    location.href = '/painel/';
+  }catch(e){ setMsg('Não consegui entrar com biometria. Use e-mail e senha.', false); }
+}
+
+async function initLogin(){
+  if(!biometriaAtiva()) return;
+  if(await biometriaSuportada()){
+    var b = document.getElementById('bio-btn'); if(b) b.style.display = 'flex';
+  }
+}
+
 /* ---- Guarda + preenche o painel ---- */
 /* impressão digital leve do dispositivo (o servidor re-hasha com sal) */
 function miFingerprint(){
@@ -83,7 +154,12 @@ async function initPainel(){
       var elP = document.getElementById('p-plano');
       if(elP) elP.textContent = nomes[sub.plano] || sub.plano;
       var elV = document.getElementById('p-validade');
-      if(elV) elV.innerHTML = 'Ativo até ' + new Date(sub.valid_until).toLocaleDateString('pt-BR');
+      if(elV){
+        var quando = new Date(sub.valid_until).toLocaleDateString('pt-BR');
+        var auto = sub.auto_renovar === true;
+        elV.innerHTML = (auto ? '↻ Renova automático em ' : 'Vence em ') + quando
+          + ' · <a href="#" onclick="assinar(\'' + sub.plano + '\');return false;" style="color:var(--golddark);font-weight:600">' + (auto ? 'Gerenciar' : 'Renovar') + '</a>';
+      }
     }
   }catch(e){}
   var cota = COTAS[planoAtual] || 500;
@@ -109,6 +185,14 @@ async function initPainel(){
       if(t){ t.value = c.getAttribute('data-prompt') || c.textContent; t.focus(); }
     });
   });
+
+  // WeCoins (saldo real da carteira de fidelidade)
+  PAINEL_TOKENS = { usados: usados, cota: cota };
+  carregarWecoins();
+
+  // aviso do trial só pra quem está no grátis
+  var avisoTrial = document.getElementById('trial-aviso');
+  if(avisoTrial && planoAtual === 'zefiro'){ avisoTrial.style.display = 'flex'; }
 
   // se a pessoa assinou um plano pago, reativa os sites que estavam com prazo (limpa expiração)
   if(planoAtual !== 'zefiro'){
@@ -140,7 +224,7 @@ async function initPainel(){
         }
         var expirou = s.expires_at && (new Date(s.expires_at).getTime() - Date.now() <= 0);
         h += '<div class="demo-card">'
-          + '<div class="demo-thumb" style="background:linear-gradient(135deg,#EFC03A,#B5860F);color:#251a02">Mistto</div>'
+          + '<div class="demo-thumb live"><iframe loading="lazy" scrolling="no" tabindex="-1" src="/s/?id=' + s.id + '&edit=1&thumb=1"></iframe><span class="thumb-tag">Mistto</span></div>'
           + '<div class="info"><h3>' + titulo + selo + '</h3><p>' + t + '</p>'
           + (expirou ? '<p style="font-size:.8rem;color:var(--golddark);margin-top:6px"><a href="/precos/" style="color:var(--golddark);font-weight:600">Assine pra colocar de volta no ar</a> — seu site está guardado.</p>' : '')
           + '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">'
@@ -153,6 +237,82 @@ async function initPainel(){
       area.innerHTML = h;
     }
   }catch(e){}
+
+  // sites compartilhados comigo (sou colaborador, não dono)
+  try{
+    var { data: convites } = await db.from('site_collaborators')
+      .select('site_id').or('user_id.eq.' + u.id + ',email.ilike.' + (u.email || ''));
+    var ids = (convites || []).map(function(c){ return c.site_id; }).filter(Boolean);
+    if(ids.length){
+      var { data: comp } = await db.from('mistto_sites').select('id,nome,prompt,user_id').in('id', ids);
+      comp = (comp || []).filter(function(s){ return s.user_id !== u.id; }); // tira os que já são meus
+      var sbox = document.getElementById('sites-shared');
+      var swrap = document.getElementById('sites-shared-box');
+      if(sbox && swrap && comp.length){
+        var esc2 = function(x){ return String(x||'').replace(/[<>]/g,''); };
+        var bs2 = 'padding:7px 14px;font-size:.82rem';
+        var hs = '<div class="gallery">';
+        comp.forEach(function(s){
+          hs += '<div class="demo-card">'
+            + '<div class="demo-thumb live"><iframe loading="lazy" scrolling="no" tabindex="-1" src="/s/?id=' + s.id + '&edit=1&thumb=1"></iframe><span class="thumb-tag">Mistto</span></div>'
+            + '<div class="info"><h3>' + (esc2(s.nome) || 'Site compartilhado') + '</h3><p>' + esc2(s.prompt || '').slice(0,70) + '</p>'
+            + '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">'
+            + '<a class="btn btn-ghost" style="' + bs2 + '" href="/s/?id=' + s.id + '" target="_blank" rel="noopener">Abrir</a>'
+            + '<a class="btn btn-ghost" style="' + bs2 + '" href="/editor/?id=' + s.id + '">Editar no chat</a>'
+            + '</div></div></div>';
+        });
+        hs += '</div>';
+        sbox.innerHTML = hs;
+        swrap.style.display = 'block';
+      }
+    }
+  }catch(e){}
+}
+
+/* ---- WeCoins: carteira de fidelidade (saldo real + trocar por tokens) ---- */
+var PAINEL_TOKENS = { usados: 0, cota: 500 };
+var WECOINS = { saldo: 0 };
+async function chamarWecoins(action, amount){
+  var { data: { session } } = await db.auth.getSession();
+  if(!session) return null;
+  var res = await fetch(SUPABASE_URL + '/functions/v1/wecoins', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
+    body: JSON.stringify({ action: action, amount: amount, access_token: session.access_token })
+  });
+  return await res.json().catch(function(){ return null; });
+}
+async function carregarWecoins(){
+  var el = document.getElementById('p-wecoins');
+  try{
+    var d = await chamarWecoins('saldo');
+    if(d && typeof d.saldo === 'number'){ WECOINS.saldo = d.saldo; if(el) el.textContent = d.saldo.toLocaleString('pt-BR'); }
+  }catch(e){}
+}
+function wcMsg(txt, ok){
+  var m = document.getElementById('p-wecoins-msg'); if(!m) return;
+  m.style.color = ok ? 'var(--green)' : '#d9534f'; m.textContent = txt || '';
+}
+async function resgatarWecoins(){
+  if(WECOINS.saldo <= 0){ wcMsg('Você ainda não tem WeCoins pra trocar.', false); return; }
+  var pergunta = 'Você tem ' + WECOINS.saldo + ' WeCoins. Quantas quer trocar por tokens extras deste mês? (1 WeCoin = 1 token)';
+  var resp = prompt(pergunta, String(WECOINS.saldo));
+  if(resp === null) return;
+  var n = Math.floor(Number(resp) || 0);
+  if(n <= 0){ wcMsg('Escolha um número válido.', false); return; }
+  if(n > WECOINS.saldo){ wcMsg('Você não tem WeCoins suficientes.', false); return; }
+  wcMsg('Trocando…', true);
+  try{
+    var d = await chamarWecoins('resgatar', n);
+    if(!d || d.error){ wcMsg((d && d.msg) || 'Não consegui trocar agora.', false); return; }
+    WECOINS.saldo = d.saldo;
+    var el = document.getElementById('p-wecoins'); if(el) el.textContent = d.saldo.toLocaleString('pt-BR');
+    // atualiza a barra de tokens na hora (o resgate soma como tokens extras do mês)
+    PAINEL_TOKENS.usados -= n;
+    var elU = document.getElementById('p-usados'); if(elU) elU.textContent = Math.max(0, PAINEL_TOKENS.usados).toLocaleString('pt-BR');
+    var bar = document.getElementById('tok-bar-fill'); if(bar) bar.style.width = Math.max(0, Math.min(100, Math.round((PAINEL_TOKENS.usados / PAINEL_TOKENS.cota) * 100))) + '%';
+    wcMsg('Pronto! ' + n + ' tokens extras adicionados neste mês.', true);
+  }catch(e){ wcMsg('Erro ao trocar. Tente de novo.', false); }
 }
 
 /* ---- Criar rápido a partir do painel (leva o texto pro /create) ---- */
@@ -171,7 +331,7 @@ async function importarSite(){
   var html = (document.getElementById('imp-html')||{}).value || '';
   function m(txt, err){ if(msg){ msg.style.display='block'; msg.style.color = err ? '#d9534f' : 'var(--muted)'; msg.textContent = txt; } }
   if(!url.trim() && !html.trim()){ m('Cole o link ou o código do site que você quer importar.', true); return; }
-  var prov = 'gemini';
+  var prov = 'cerebras';
   var provEl = document.getElementById('imp-provider'); if(provEl) prov = provEl.value;
   try{
     var { data: { session } } = await db.auth.getSession();
@@ -229,6 +389,7 @@ async function initConta(){
     }catch(err){ var r=document.getElementById('ct-ref'); if(r) r.textContent = 'Seu link de indicação aparece aqui.'; }
     document.getElementById('ct-load').style.display = 'none';
     document.getElementById('ct').style.display = 'block';
+    bioBotaoConta();
   }catch(e){ document.getElementById('ct-load').textContent = 'Não consegui carregar sua conta agora.'; }
 }
 async function salvarNomeConta(){
@@ -306,6 +467,8 @@ function cfgStatus(){
   var s = document.getElementById('cfg-status'), b = document.getElementById('cfg-pub');
   if(s) s.textContent = CFG.publicado ? 'No ar' : 'Fora do ar';
   if(b) b.textContent = CFG.publicado ? 'Tirar do ar' : 'Publicar';
+  var dp = document.getElementById('cfg-danger-pub');
+  if(dp) dp.textContent = CFG.publicado ? 'Tirar do ar' : 'Publicar de novo';
 }
 
 async function initConfig(){
@@ -315,7 +478,7 @@ async function initConfig(){
   if(!id){ location.href = '/painel/'; return; }
   CFG.id = id;
   try{
-    var { data: site } = await db.from('mistto_sites').select('id,nome,slug,published,user_id').eq('id', id).maybeSingle();
+    var { data: site } = await db.from('mistto_sites').select('id,nome,slug,published,favicon_url,user_id').eq('id', id).maybeSingle();
     if(!site || site.user_id !== session.user.id){
       document.getElementById('cfg-load').textContent = 'Não encontrei esse site na sua conta.';
       return;
@@ -323,12 +486,97 @@ async function initConfig(){
     CFG.slug = site.slug; CFG.publicado = site.published !== false;
     document.getElementById('cfg-nome').value = site.nome || '';
     document.getElementById('cfg-slug').value = site.slug || '';
+    cfgMostraFavicon(site.favicon_url);
     cfgPreview(); cfgStatus();
     var open = document.getElementById('cfg-open'); if(open) open.href = '/s/?id=' + id;
     var edit = document.getElementById('cfg-edit'); if(edit) edit.href = '/editor/?id=' + id;
     document.getElementById('cfg-load').style.display = 'none';
     document.getElementById('cfg').style.display = 'block';
+    carregarPedidos();
+    carregarColaboradores();
   }catch(e){ document.getElementById('cfg-load').textContent = 'Não consegui carregar as configurações agora.'; }
+}
+
+/* ---- Compartilhar site (colaboradores) ---- */
+async function carregarColaboradores(){
+  if(!CFG.id) return;
+  var box = document.getElementById('cfg-colab-list'); if(!box) return;
+  try{
+    var { data: cols } = await db.from('site_collaborators').select('id,email,user_id').eq('site_id', CFG.id).order('created_at', { ascending:true });
+    if(!cols || !cols.length){ box.innerHTML = ''; return; }
+    var esc = function(x){ return String(x||'').replace(/[<>]/g,''); };
+    box.innerHTML = cols.map(function(c){
+      var estado = c.user_id ? 'ativo' : 'convite enviado';
+      return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:9px 13px">'
+        + '<b style="font-size:.9rem">' + esc(c.email) + '</b>'
+        + '<span style="font-size:.74rem;color:var(--muted)">' + estado + '</span>'
+        + '<button class="btn btn-ghost danger-btn" style="margin-left:auto;padding:5px 12px;font-size:.78rem" onclick="removerColaborador(\'' + c.id + '\')">Remover</button>'
+        + '</div>';
+    }).join('');
+  }catch(e){ box.innerHTML = ''; }
+}
+async function convidarColaborador(){
+  if(!CFG.id) return;
+  var el = document.getElementById('cfg-colab-email');
+  var email = (el ? el.value : '').trim().toLowerCase();
+  if(!email || email.indexOf('@') < 1){ cfgMsg('cfg-colab-msg', 'Escreva um e-mail válido.', false); return; }
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    if(!session){ location.href = '/login/'; return; }
+    if(email === (session.user.email || '').toLowerCase()){ cfgMsg('cfg-colab-msg', 'Esse é o seu próprio e-mail :)', false); return; }
+    var { error } = await db.from('site_collaborators').insert({ site_id: CFG.id, email: email, convidado_por: session.user.id });
+    if(error){
+      var dup = /duplicate|unique/i.test(error.message || '');
+      cfgMsg('cfg-colab-msg', dup ? 'Essa pessoa já foi convidada.' : 'Não consegui convidar agora.', false); return;
+    }
+    cfgMsg('cfg-colab-msg', 'Convite enviado! A pessoa acessa o site entrando na Mistto com esse e-mail.', true);
+    if(el) el.value = '';
+    carregarColaboradores();
+  }catch(e){ cfgMsg('cfg-colab-msg', 'Erro ao convidar.', false); }
+}
+async function removerColaborador(idc){
+  if(!idc) return;
+  if(!confirm('Remover o acesso desta pessoa a este site?')) return;
+  try{
+    var { error } = await db.from('site_collaborators').delete().eq('id', idc);
+    if(error){ cfgMsg('cfg-colab-msg', 'Não consegui remover agora.', false); return; }
+    carregarColaboradores();
+  }catch(e){ cfgMsg('cfg-colab-msg', 'Erro ao remover.', false); }
+}
+
+/* andamento dos pedidos de endereço (subdomínio/domínio) */
+var CFG_STATUS = {
+  requisitado: { txt:'Recebido', cor:'#B5860F', bg:'rgba(212,160,23,.14)' },
+  analise:     { txt:'Em análise', cor:'#2b6cb0', bg:'rgba(43,108,176,.12)' },
+  aprovado:    { txt:'Aprovado', cor:'#2f855a', bg:'rgba(47,133,90,.14)' },
+  recusado:    { txt:'Não aprovado', cor:'#c53030', bg:'rgba(197,48,48,.12)' }
+};
+async function carregarPedidos(){
+  if(!CFG.id) return;
+  var box = document.getElementById('cfg-pedidos');
+  var wrap = document.getElementById('cfg-pedidos-box');
+  if(!box || !wrap) return;
+  try{
+    var { data: pedidos } = await db.from('domain_requests')
+      .select('tipo,valor,status,created_at').eq('site_id', CFG.id).order('created_at', { ascending:false });
+    if(!pedidos || !pedidos.length){ wrap.style.display = 'none'; return; }
+    var esc = function(x){ return String(x||'').replace(/[<>]/g,''); };
+    box.innerHTML = pedidos.map(function(p){
+      var s = CFG_STATUS[p.status] || CFG_STATUS.requisitado;
+      var endereco = p.tipo === 'subdominio' ? (esc(p.valor) + '.weblar.app.br') : esc(p.valor);
+      var quando = p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '';
+      var extra = p.status === 'aprovado'
+        ? '<a href="https://' + endereco + '" target="_blank" rel="noopener" style="color:var(--golddark);font-weight:600;font-size:.82rem">abrir &rarr;</a>'
+        : (p.status === 'recusado' ? '<span style="color:var(--muted);font-size:.8rem">fale com a gente</span>' : '<span style="color:var(--muted);font-size:.8rem">a gente te avisa por e-mail</span>');
+      return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:10px 14px">'
+        + '<b style="font-size:.92rem">' + endereco + '</b>'
+        + '<span style="font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:999px;color:' + s.cor + ';background:' + s.bg + '">' + s.txt + '</span>'
+        + '<span style="color:var(--muted);font-size:.78rem">' + quando + '</span>'
+        + '<span style="margin-left:auto">' + extra + '</span>'
+        + '</div>';
+    }).join('');
+    wrap.style.display = 'block';
+  }catch(e){ wrap.style.display = 'none'; }
 }
 
 async function salvarNomeSite(){
@@ -359,6 +607,50 @@ async function salvarSlug(){
   }catch(e){ cfgMsg('cfg-slug-msg', 'Erro ao salvar.', false); }
 }
 
+/* ---- Favicon do site (aparece na aba do navegador) ---- */
+function cfgMostraFavicon(url){
+  var prev = document.getElementById('cfg-fav-prev');
+  var rm = document.getElementById('cfg-fav-rm');
+  if(url){
+    if(prev){ prev.src = url; prev.style.display = ''; }
+    if(rm) rm.style.display = '';
+  } else {
+    if(prev){ prev.src = ''; prev.style.display = 'none'; }
+    if(rm) rm.style.display = 'none';
+  }
+}
+async function salvarFavicon(ev){
+  if(!CFG.id) return;
+  var file = ev && ev.target && ev.target.files && ev.target.files[0];
+  if(!file) return;
+  if(!/^image\//.test(file.type)){ cfgMsg('cfg-fav-msg', 'Escolha uma imagem (PNG, JPG, SVG).', false); return; }
+  if(file.size > 1024 * 1024){ cfgMsg('cfg-fav-msg', 'Imagem muito grande (máx 1 MB).', false); return; }
+  cfgMsg('cfg-fav-msg', 'Enviando ícone…', true);
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    if(!session){ location.href = '/login/'; return; }
+    var ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g,'');
+    var path = session.user.id + '/favicon-' + CFG.id + '-' + Date.now() + '.' + ext;
+    var up = await db.storage.from('site-uploads').upload(path, file, { upsert: true, contentType: file.type });
+    if(up.error){ cfgMsg('cfg-fav-msg', 'Não consegui subir a imagem (o bucket site-uploads existe?).', false); return; }
+    var pub = db.storage.from('site-uploads').getPublicUrl(path);
+    var url = pub && pub.data && pub.data.publicUrl;
+    var { error } = await db.from('mistto_sites').update({ favicon_url: url }).eq('id', CFG.id);
+    if(error){ cfgMsg('cfg-fav-msg', 'Não consegui salvar agora.', false); return; }
+    cfgMostraFavicon(url);
+    cfgMsg('cfg-fav-msg', 'Ícone salvo! Já aparece na aba do seu site.', true);
+  }catch(e){ cfgMsg('cfg-fav-msg', 'Erro ao enviar o ícone.', false); }
+}
+async function removerFavicon(){
+  if(!CFG.id) return;
+  try{
+    var { error } = await db.from('mistto_sites').update({ favicon_url: null }).eq('id', CFG.id);
+    if(error){ cfgMsg('cfg-fav-msg', 'Não consegui remover agora.', false); return; }
+    cfgMostraFavicon(null);
+    cfgMsg('cfg-fav-msg', 'Ícone removido.', true);
+  }catch(e){ cfgMsg('cfg-fav-msg', 'Erro ao remover.', false); }
+}
+
 async function cfgTogglePub(){
   if(!CFG.id) return;
   var novo = !CFG.publicado;
@@ -372,8 +664,40 @@ async function cfgTogglePub(){
 async function apagarSiteCfg(){
   if(!CFG.id) return;
   if(!confirm('Apagar este site de vez? Essa ação não tem volta.')) return;
-  try{ await db.from('mistto_sites').delete().eq('id', CFG.id); location.href = '/painel/'; }
-  catch(e){ alert('Não consegui apagar agora.'); }
+  try{
+    try{ await db.from('site_messages').delete().eq('site_id', CFG.id); }catch(e){}
+    await db.from('mistto_sites').delete().eq('id', CFG.id);
+    location.href = '/painel/';
+  }
+  catch(e){ cfgMsg('cfg-danger-msg', 'Não consegui apagar agora.', false); }
+}
+async function apagarHistoricoChat(){
+  if(!CFG.id) return;
+  if(!confirm('Apagar todo o histórico da conversa deste site? O site continua igual, só o chat é limpo.')) return;
+  try{
+    var { error } = await db.from('site_messages').delete().eq('site_id', CFG.id);
+    if(error){ cfgMsg('cfg-danger-msg', 'Não consegui apagar a conversa agora.', false); return; }
+    cfgMsg('cfg-danger-msg', 'Histórico da conversa apagado.', true);
+  }catch(e){ cfgMsg('cfg-danger-msg', 'Erro ao apagar a conversa.', false); }
+}
+/* apaga TODOS os sites da conta (zona de perigo do /conta) */
+async function apagarTodosSites(){
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    if(!session){ location.href = '/login/'; return; }
+    var { count } = await db.from('mistto_sites').select('id', { count:'exact', head:true }).eq('user_id', session.user.id);
+    if(!count){ ctMsg('ct-danger-msg', 'Você não tem sites pra apagar.', true); return; }
+    if(!confirm('Apagar TODOS os seus ' + count + ' site(s) de vez? Essa ação não tem volta.')) return;
+    if(!confirm('Tem certeza mesmo? Isso apaga tudo permanentemente.')) return;
+    try{
+      var { data: ids } = await db.from('mistto_sites').select('id').eq('user_id', session.user.id);
+      var lista = (ids || []).map(function(r){ return r.id; });
+      if(lista.length){ try{ await db.from('site_messages').delete().in('site_id', lista); }catch(e){} }
+    }catch(e){}
+    var { error } = await db.from('mistto_sites').delete().eq('user_id', session.user.id);
+    if(error){ ctMsg('ct-danger-msg', 'Não consegui apagar agora.', false); return; }
+    ctMsg('ct-danger-msg', 'Todos os seus sites foram apagados.', true);
+  }catch(e){ ctMsg('ct-danger-msg', 'Erro ao apagar os sites.', false); }
 }
 
 /* pedir subdomínio ou domínio próprio — cai na tabela + e-mail pro admin */
@@ -393,6 +717,7 @@ async function solicitarDominio(tipo){
     if(error){ cfgMsg(msgId, 'Não consegui enviar agora. Tente de novo.', false); return; }
     cfgMsg(msgId, 'Pedido enviado! A gente te avisa por e-mail quando estiver no ar.', true);
     if(el) el.value = '';
+    carregarPedidos();
   }catch(e){ cfgMsg(msgId, 'Erro ao enviar o pedido.', false); }
 }
 
@@ -411,7 +736,15 @@ async function checkout(payload){
     if(data.url){ location.href = data.url; } else { alert(data.msg || 'Não consegui iniciar o pagamento agora. Tente de novo.'); }
   }catch(e){ alert('Ops, algo deu errado. Tente de novo.'); }
 }
-function assinar(plano){ checkout({ plano: plano }); }
+/* Assinar: usa o link recorrente da InfinitePay (débito automático) se existir;
+   senão cai no pagamento avulso (create-order). */
+async function assinar(plano){
+  try{
+    var { data } = await db.from('plano_links').select('link').eq('plano', plano).maybeSingle();
+    if(data && data.link){ location.href = data.link; return; }
+  }catch(e){}
+  checkout({ plano: plano });
+}
 function comprarTokens(){
   var inp = document.getElementById('tok-qty');
   var q = inp ? parseInt(inp.value, 10) || 0 : 0;
@@ -424,6 +757,42 @@ function calcTokens(){
 }
 
 /* ---- Página /create (protegida) ---- */
+var CRIAR = { imgs: [] };
+
+/* sobe uma imagem pro Storage e devolve {url,name} (reutilizável) */
+async function subirImagem(file, prefixo){
+  var { data: { session } } = await db.auth.getSession();
+  if(!session) return null;
+  var ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g,'');
+  var path = session.user.id + '/' + (prefixo||'img') + '-' + Date.now() + '-' + Math.floor(Math.random()*1e4) + '.' + ext;
+  var up = await db.storage.from('site-uploads').upload(path, file, { upsert: true, contentType: file.type });
+  if(up.error) return null;
+  var pub = db.storage.from('site-uploads').getPublicUrl(path);
+  return { url: pub && pub.data && pub.data.publicUrl, name: file.name };
+}
+
+function criarRenderImgs(){
+  var box = document.getElementById('create-imgs-list'); if(!box) return;
+  box.innerHTML = CRIAR.imgs.map(function(im, i){
+    return '<div class="thumb"><img src="' + im.url + '" alt=""><span class="x" title="Remover" onclick="criarRemoveImg(' + i + ')">&times;</span></div>';
+  }).join('');
+}
+function criarRemoveImg(i){ CRIAR.imgs.splice(i, 1); criarRenderImgs(); }
+
+async function criarAddImgs(files){
+  var drop = document.getElementById('create-drop');
+  var arr = Array.prototype.slice.call(files || []).filter(function(f){ return /^image\//.test(f.type); });
+  if(!arr.length) return;
+  if(drop){ drop.innerHTML = '<span>Enviando…</span>'; }
+  for(var k=0;k<arr.length;k++){
+    if(arr[k].size > 5*1024*1024){ continue; }
+    var im = await subirImagem(arr[k], 'ref');
+    if(im && im.url){ CRIAR.imgs.push(im); }
+  }
+  if(drop){ drop.innerHTML = '<span>Arraste imagens aqui ou <b>clique pra escolher</b></span>'; }
+  criarRenderImgs();
+}
+
 async function initCreate(){
   var { data: { session } } = await db.auth.getSession();
   if(!session){ location.href = '/login/'; return; }
@@ -436,19 +805,54 @@ async function initCreate(){
       if(t){ t.value = c.getAttribute('data-prompt') || c.textContent; t.focus(); }
     });
   });
+  // imagens: clicar e arrastar-e-soltar
+  var drop = document.getElementById('create-drop');
+  var file = document.getElementById('create-imgs');
+  if(drop && file){
+    drop.addEventListener('click', function(){ file.click(); });
+    file.addEventListener('change', function(ev){ criarAddImgs(ev.target.files); file.value=''; });
+    ['dragenter','dragover'].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add('drag'); }); });
+    ['dragleave','drop'].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove('drag'); }); });
+    drop.addEventListener('drop', function(e){ if(e.dataTransfer && e.dataTransfer.files) criarAddImgs(e.dataTransfer.files); });
+  }
 }
-/* /create só COLETA (nome + descrição) e leva pro chat, que conduz a conversa */
+
+/* /create COLETA tudo e leva pro chat (ou importa direto, se colou um HTML pronto) */
 async function gerarSite(){
   var ta = document.getElementById('create-prompt');
   var prompt = ta ? ta.value.trim() : '';
-  if(!prompt){ alert('Conta pra Mistto o que você quer criar (mesmo que só uma ideia).'); return; }
-  var nomeEl = document.getElementById('create-nome');
-  var nome = nomeEl ? nomeEl.value.trim() : '';
-  var provEl = document.getElementById('create-provider');
-  var provider = provEl ? provEl.value : 'gemini';
+  var startHtml = ((document.getElementById('create-html')||{}).value || '').trim();
+  if(!prompt && !startHtml){ alert('Conta pra Mistto o que você quer criar (mesmo que só uma ideia), ou cole um HTML pronto em "Mais opções".'); return; }
+  var nome = ((document.getElementById('create-nome')||{}).value || '').trim();
+  var provider = (document.getElementById('create-provider')||{}).value || 'cerebras';
+  var slug = cfgSlugLimpo((document.getElementById('create-slug')||{}).value || '');
   var st = document.getElementById('create-status');
+
+  // começar de um HTML pronto -> usa o modo importar (recria como página editável)
+  if(startHtml){
+    if(st){ st.style.display='block'; st.style.color='var(--muted)'; st.textContent='Montando seu site a partir do HTML…'; }
+    try{
+      var { data: { session } } = await db.auth.getSession();
+      if(!session){ location.href = '/login/'; return; }
+      var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
+        body: JSON.stringify({ importar:true, html_importado:startHtml, nome:nome, slug:slug, provider:provider, fp: miFingerprint(), access_token: session.access_token })
+      });
+      var d = await res.json().catch(function(){ return {}; });
+      if(!res.ok || d.error){ if(st){ st.style.color='#d9534f'; st.textContent = traduzGerar(d, res.status); } return; }
+      location.href = '/editor/?id=' + d.id + '&novo=1';
+    }catch(e){ if(st){ st.style.color='#d9534f'; st.textContent='Algo deu errado. Tente de novo.'; } }
+    return;
+  }
+
+  // fluxo normal: monta a descrição (com as imagens) e leva pro chat
+  var desc = prompt;
+  if(CRIAR.imgs.length){
+    desc += '\n\n(Imagens enviadas pelo dono pra usar no site, coloque-as em <img>: ' + CRIAR.imgs.map(function(i){ return i.url; }).join(' , ') + ')';
+  }
   if(st){ st.style.display='block'; st.style.color='var(--muted)'; st.textContent='Abrindo o chat…'; }
-  location.href = '/editor/?novo=1&nome=' + encodeURIComponent(nome) + '&desc=' + encodeURIComponent(prompt) + '&prov=' + provider;
+  location.href = '/editor/?novo=1&nome=' + encodeURIComponent(nome) + '&desc=' + encodeURIComponent(desc) + '&prov=' + provider + (slug ? ('&slug=' + encodeURIComponent(slug)) : '');
 }
 
 /* traduz o erro da function gerar-site pra algo acionável */
@@ -467,7 +871,7 @@ function traduzGerar(data, status){
 }
 
 /* ===================== EDITOR (chat + preview) ===================== */
-var EDITOR = { id:null, slug:null, publicado:true, fase:'edicao', nome:'', provider:'gemini', msgs:[], gerando:false, abort:null, ultimaInstr:'', anexo:null, selecao:null };
+var EDITOR = { id:null, slug:null, publicado:true, fase:'edicao', nome:'', provider:'cerebras', msgs:[], gerando:false, abort:null, ultimaInstr:'', anexo:null, selecao:null };
 
 var SVG_SETA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>';
 var SVG_STOP = '<svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor"/></svg>';
@@ -531,13 +935,18 @@ async function edArquivoEscolhido(ev){
     if(box){ box.innerHTML = '<img src="' + url + '" alt=""><span>' + escapeHtml(file.name) + '</span><span class="x" title="Remover" onclick="edLimpaAnexo()">&times;</span>'; }
   }catch(e){ if(box){ box.innerHTML = '<span style="color:#d9534f">Erro ao anexar.</span><span class="x" onclick="edLimpaAnexo()">&times;</span>'; } }
 }
-function edAddMsg(texto, tipo){
+function edAddMsg(texto, tipo, autor){
   var box = document.getElementById('ed-msgs');
   if(!box) return null;
   var d = document.createElement('div');
   d.className = 'msg ' + (tipo || 'ai');
   if(tipo === 'ai'){
     d.innerHTML = '<span class="who">Mistto</span>' + texto;
+  } else if(tipo === 'user' && autor){
+    // mensagem de um COLABORADOR: mostra o nome e não deixa editar (não é sua)
+    d.className = 'msg user other';
+    d.innerHTML = '<span class="who">' + escapeHtml(autor) + '</span>';
+    d.appendChild(document.createTextNode(texto));
   } else if(tipo === 'user'){
     // sua mensagem: texto + lápis pra editar (recoloca no compositor)
     d.appendChild(document.createTextNode(texto));
@@ -617,7 +1026,8 @@ async function edSalvar(role, content){
   try{
     var { data: { session } } = await db.auth.getSession();
     if(!session || !EDITOR.id) return;
-    await db.from('site_messages').insert({ site_id: EDITOR.id, user_id: session.user.id, role: role, content: content });
+    var autor = role === 'user' ? (EDITOR.meuNome || '') : null;
+    await db.from('site_messages').insert({ site_id: EDITOR.id, user_id: session.user.id, role: role, content: content, autor: autor });
   }catch(e){}
 }
 
@@ -629,7 +1039,7 @@ async function initEditor(){
   var prov = qs.get('prov');
   var sel = document.getElementById('ed-provider');
   if(sel && ['gemini','groq','cerebras','openrouter'].indexOf(prov) !== -1) sel.value = prov;
-  EDITOR.provider = sel ? sel.value : (prov || 'gemini');
+  EDITOR.provider = sel ? sel.value : (prov || 'cerebras');
   if(sel){ sel.addEventListener('change', function(){ EDITOR.provider = sel.value; }); }
 
   var box = document.getElementById('ed-msgs');
@@ -663,6 +1073,7 @@ async function initEditor(){
   if(!desc){ location.href = '/create/'; return; }
   EDITOR.fase = 'entrevista';
   EDITOR.nome = qs.get('nome') || '';
+  EDITOR.slugDesejado = qs.get('slug') || '';
   EDITOR.msgs = [{ role:'user', content: desc }];
   var url = document.getElementById('ed-url'); if(url) url.textContent = EDITOR.nome || 'novo site';
   var pb = document.getElementById('ed-pub'); if(pb) pb.style.display = 'none';
@@ -675,20 +1086,30 @@ async function initEditor(){
 /* abre um site que já existe (edição) */
 async function initEditorExistente(session, id, qs){
   EDITOR.id = id; EDITOR.fase = 'edicao';
+  EDITOR.meuId = session.user.id;
+  EDITOR.meuNome = (session.user.user_metadata && (session.user.user_metadata.nome || session.user.user_metadata.full_name)) || (session.user.email || '').split('@')[0];
   try{
     var { data: site } = await db.from('mistto_sites').select('id,prompt,slug,published,user_id').eq('id', id).maybeSingle();
-    if(!site || site.user_id !== session.user.id){ edAddMsg('Não encontrei esse site na sua conta.', 'err'); return; }
+    if(!site){ edAddMsg('Não encontrei esse site, ou você não tem acesso a ele.', 'err'); return; }
+    EDITOR.ehDono = site.user_id === session.user.id;
     EDITOR.slug = site.slug;
     EDITOR.publicado = site.published !== false;
-    var { data: msgs } = await db.from('site_messages').select('role,content').eq('site_id', id).order('created_at', { ascending: true });
+    // colaborador abrindo pela 1ª vez: carimba o user_id no convite (pra acesso futuro)
+    if(!EDITOR.ehDono){
+      try{ await db.from('site_collaborators').update({ user_id: session.user.id }).eq('site_id', id).is('user_id', null).ilike('email', session.user.email); }catch(e){}
+    }
+    var { data: msgs } = await db.from('site_messages').select('role,content,user_id,autor').eq('site_id', id).order('created_at', { ascending: true });
     if(msgs && msgs.length){
-      msgs.forEach(function(m){ edAddMsg(m.content, m.role === 'user' ? 'user' : 'ai'); });
+      msgs.forEach(function(m){
+        if(m.role === 'user'){ edAddMsg(m.content, 'user', (m.user_id && m.user_id !== EDITOR.meuId) ? (m.autor || 'Colaborador') : null); }
+        else { edAddMsg(m.content, 'ai'); }
+      });
     } else {
       var saud = qs.get('novo')
         ? 'Prontinho! Montei seu site. Me diga o que quer mudar e eu ajusto na hora.'
         : 'Aqui está seu site. Me diga o que quer mudar e eu ajusto.';
       var seed = [];
-      if(site.prompt){ edAddMsg(site.prompt, 'user'); seed.push({ site_id:id, user_id:session.user.id, role:'user', content:site.prompt }); }
+      if(site.prompt){ edAddMsg(site.prompt, 'user'); seed.push({ site_id:id, user_id:session.user.id, role:'user', content:site.prompt, autor: EDITOR.meuNome }); }
       edAddMsg(saud, 'ai'); seed.push({ site_id:id, user_id:session.user.id, role:'assistant', content:saud });
       try{ await db.from('site_messages').insert(seed); }catch(e){}
     }
@@ -746,7 +1167,7 @@ async function gerarDoResumo(resumo){
     var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
-      body: JSON.stringify({ prompt: prompt, nome: EDITOR.nome, provider:EDITOR.provider, fp: miFingerprint(), access_token:session.access_token }),
+      body: JSON.stringify({ prompt: prompt, nome: EDITOR.nome, slug: EDITOR.slugDesejado || undefined, provider:EDITOR.provider, fp: miFingerprint(), access_token:session.access_token }),
       signal: EDITOR.abort.signal
     });
     var data = await res.json();
@@ -835,7 +1256,11 @@ async function aplicarEdicao(instr, regen){
       signal: EDITOR.abort.signal
     });
     var data = await res.json();
-    if(data.id){
+    if(data.resposta){
+      // foi uma pergunta/conversa: Mistto respondeu sem mexer no site
+      if(pensando){ pensando.innerHTML = '<span class="who">Mistto</span>' + escapeHtml(data.resposta); edTools(pensando, data.resposta, false); }
+      edSalvar('assistant', data.resposta);
+    } else if(data.id){
       var okMsg = regen ? 'Regenerei — dá uma olhada na prévia.' : 'Feito! Atualizei a prévia ao lado.';
       if(pensando){ pensando.innerHTML = '<span class="who">Mistto</span>' + okMsg; edTools(pensando, okMsg, true); }
       edSalvar('assistant', okMsg);

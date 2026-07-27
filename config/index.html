@@ -55,6 +55,19 @@
         <div id="cfg-slug-msg" style="font-size:.85rem;margin-top:6px;min-height:18px"></div>
       </div>
 
+      <!-- FAVICON -->
+      <div class="stat" style="margin-bottom:18px">
+        <div class="lbl">Ícone do site (favicon)</div>
+        <p style="color:var(--muted);font-size:.9rem;margin:8px 0 4px">É a imagenzinha que aparece na aba do navegador. Use um PNG quadrado (de preferência 64×64 ou maior).</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;align-items:center">
+          <img id="cfg-fav-prev" src="" alt="" style="width:40px;height:40px;border-radius:8px;border:1.5px solid var(--line);object-fit:cover;display:none;background:var(--card)">
+          <button class="btn btn-ghost" onclick="document.getElementById('cfg-fav-file').click()" style="padding:9px 18px">Escolher imagem</button>
+          <button class="btn btn-ghost" id="cfg-fav-rm" onclick="removerFavicon()" style="padding:9px 18px;display:none;color:#d9534f;border-color:#d9534f">Remover</button>
+          <input type="file" id="cfg-fav-file" accept="image/*" style="display:none" onchange="salvarFavicon(event)">
+        </div>
+        <div id="cfg-fav-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>
+      </div>
+
       <!-- STATUS -->
       <div class="stat" style="margin-bottom:18px">
         <div class="lbl">Status</div>
@@ -89,11 +102,42 @@
         <div id="cfg-dom-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>
       </div>
 
-      <!-- APAGAR -->
+      <!-- COMPARTILHAR / COLABORADORES -->
+      <div class="stat" style="margin-bottom:18px">
+        <div class="lbl">Compartilhar e colaborar</div>
+        <p style="color:var(--muted);font-size:.9rem;margin:8px 0 4px">Convide alguém por e-mail pra editar este site com você. No chat vocês aparecem por nome (Você / a pessoa / Mistto).</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+          <input id="cfg-colab-email" type="email" placeholder="email@dapessoa.com" style="flex:1;min-width:200px;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-family:'Inter';font-size:1rem;color:var(--ink);outline:none">
+          <button class="btn btn-gold" onclick="convidarColaborador()">Convidar</button>
+        </div>
+        <div id="cfg-colab-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>
+        <div id="cfg-colab-list" style="margin-top:10px;display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
+      <!-- ANDAMENTO DOS PEDIDOS DE ENDEREÇO -->
+      <div class="stat" id="cfg-pedidos-box" style="margin-bottom:18px;display:none">
+        <div class="lbl">Seus pedidos de endereço</div>
+        <div id="cfg-pedidos" style="margin-top:10px;display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <!-- ZONA DE PERIGO -->
       <div class="stat" style="border-color:#f2c4c0">
         <div class="lbl" style="color:#b23b33">Zona de perigo</div>
-        <p style="color:var(--muted);font-size:.9rem;margin:8px 0 12px">Apagar o site é permanente e não tem volta.</p>
-        <button class="btn btn-ghost" onclick="apagarSiteCfg()" style="color:#d9534f;border-color:#d9534f;padding:9px 18px">Apagar este site</button>
+        <div class="danger-list">
+          <div class="danger-item">
+            <div><b>Tirar o site do ar</b><span>Fica invisível pro público. Dá pra publicar de novo quando quiser.</span></div>
+            <button class="btn btn-ghost" id="cfg-danger-pub" onclick="cfgTogglePub()">Tirar do ar</button>
+          </div>
+          <div class="danger-item">
+            <div><b>Apagar histórico da conversa</b><span>Limpa as mensagens do chat deste site. O site em si continua.</span></div>
+            <button class="btn btn-ghost danger-btn" onclick="apagarHistoricoChat()">Apagar conversa</button>
+          </div>
+          <div class="danger-item">
+            <div><b>Apagar este site</b><span>Permanente. O site e a conversa somem e não tem como recuperar.</span></div>
+            <button class="btn btn-ghost danger-btn" onclick="apagarSiteCfg()">Apagar site</button>
+          </div>
+        </div>
+        <div id="cfg-danger-msg" style="font-size:.85rem;margin-top:10px;min-height:18px"></div>
       </div>
     </div>
   </div>

@@ -40,6 +40,10 @@
       </div>
       <button type="submit" class="btn btn-gold">Entrar</button>
     </form>
+    <button id="bio-btn" type="button" class="btn btn-ghost" onclick="entrarComBiometria()" style="display:none;width:100%;justify-content:center;margin-top:12px;gap:8px">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 11c-1.5 0-3 1-3 3v3"/><path d="M12 11c1.5 0 3 1 3 3v1"/><path d="M7 12a5 5 0 0 1 8-4"/><path d="M5 10a7 7 0 0 1 11-3.5"/><path d="M12 7a4 4 0 0 1 4 4v2"/></svg>
+      Entrar com biometria
+    </button>
     <div id="auth-msg" class="auth-msg"></div>
     <p class="auth-alt">Não tem conta ainda? <a href="/cadastro/">Criar conta</a></p>
   </div>
@@ -47,5 +51,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/assets/auth.js"></script>
+<script>initLogin();</script>
 </body>
 </html>

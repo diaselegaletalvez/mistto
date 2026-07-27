@@ -93,14 +93,29 @@
           <div class="lbl">Segurança</div>
           <p style="color:var(--muted);font-size:.85rem;margin:8px 0 10px">Usou o computador de outra pessoa? Encerre todas as sessões.</p>
           <button class="btn btn-ghost" onclick="sairDeTudo()" style="padding:9px 16px;font-size:.85rem">Sair de todos os dispositivos</button>
+          <div style="border-top:1px solid var(--line);margin-top:14px;padding-top:14px">
+            <div style="font-size:.85rem;color:var(--ink);font-weight:600;margin-bottom:4px">Login com biometria</div>
+            <p style="color:var(--muted);font-size:.82rem;margin:0 0 10px">Entre com Touch ID / Face ID neste aparelho, sem digitar senha.</p>
+            <div id="ct-bio-wrap"><button class="btn btn-ghost" id="ct-bio-btn" onclick="ativarBiometria()" style="padding:9px 16px;font-size:.85rem">Ativar login com biometria</button></div>
+            <div id="ct-bio-msg" style="font-size:.83rem;margin-top:8px;min-height:16px"></div>
+          </div>
         </div>
       </div>
 
       <!-- ZONA DE PERIGO -->
       <div class="stat" style="border-color:#f2c4c0">
         <div class="lbl" style="color:#b23b33">Zona de perigo</div>
-        <p style="color:var(--muted);font-size:.9rem;margin:8px 0 12px">Excluir a conta apaga permanentemente seus dados no Mistto e no Weblar. Enviamos um e-mail de confirmação antes.</p>
-        <button class="btn btn-ghost" id="ct-excluir" onclick="excluirContaMistto()" style="color:#d9534f;border-color:#d9534f;padding:9px 18px">Excluir minha conta</button>
+        <div class="danger-list">
+          <div class="danger-item">
+            <div><b>Apagar todos os meus sites</b><span>Remove de vez todos os sites criados na Mistto. Sua conta continua.</span></div>
+            <button class="btn btn-ghost danger-btn" onclick="apagarTodosSites()">Apagar todos os sites</button>
+          </div>
+          <div class="danger-item">
+            <div><b>Excluir minha conta</b><span>Apaga permanentemente seus dados no Mistto e no Weblar. Enviamos um e-mail de confirmação antes.</span></div>
+            <button class="btn btn-ghost danger-btn" id="ct-excluir" onclick="excluirContaMistto()">Excluir conta</button>
+          </div>
+        </div>
+        <div id="ct-danger-msg" style="font-size:.85rem;margin-top:10px;min-height:18px"></div>
       </div>
     </div>
   </div>

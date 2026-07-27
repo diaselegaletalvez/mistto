@@ -36,6 +36,12 @@
       <a href="/create/" class="btn btn-gold">+ Criar novo site</a>
     </div>
 
+    <!-- Aviso do trial grátis (some pra quem tem plano pago) -->
+    <div id="trial-aviso" class="trial-aviso" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span>No plano grátis seu site fica <b>7 dias no ar</b> e depois sai (guardamos o conteúdo). <a href="/precos/">Assine um plano</a> pra deixar no ar pra sempre.</span>
+    </div>
+
     <!-- Criar rápido, direto do painel -->
     <div class="prompt-box">
       <textarea id="pnl-prompt" placeholder="Descreva um site pra Mistto criar… ex: uma landing pro meu curso de violão, com aulas, depoimentos e botão de WhatsApp." rows="2"></textarea>
@@ -65,7 +71,11 @@
       <div class="stat">
         <div class="lbl">WeCoins</div>
         <div class="val" id="p-wecoins">0</div>
-        <div class="cta"><a href="/wecoins/" style="color:var(--golddark);font-weight:600">Como funciona</a></div>
+        <div class="cta" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+          <a href="#" onclick="resgatarWecoins();return false;" style="color:var(--golddark);font-weight:600">Trocar por tokens</a>
+          <a href="/wecoins/" style="color:var(--muted)">Como funciona</a>
+        </div>
+        <div id="p-wecoins-msg" style="font-size:.78rem;margin-top:6px;min-height:14px;color:var(--muted)"></div>
       </div>
     </div>
 
@@ -113,6 +123,12 @@
         <a href="#" onclick="importarSite();return false;" class="btn btn-gold" id="imp-btn" style="width:100%;justify-content:center;margin-top:10px">Importar site</a>
         <p id="imp-msg" style="font-size:.82rem;color:var(--muted);text-align:center;margin-top:8px;display:none"></p>
       </div>
+    </div>
+
+    <!-- Sites compartilhados comigo -->
+    <div id="sites-shared-box" style="display:none">
+      <h2 style="font-size:1.5rem;margin:40px 0 16px">Compartilhados comigo</h2>
+      <div id="sites-shared"></div>
     </div>
 
     <!-- Integração com o Weblar -->

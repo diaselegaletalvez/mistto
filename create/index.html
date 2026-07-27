@@ -45,14 +45,40 @@
         </div>
         <span style="display:flex;gap:8px;align-items:center">
           <select id="create-provider" style="background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:11px 14px;font-family:'Inter';color:var(--ink);outline:none">
-            <option value="gemini">IA: Gemini</option>
+            <option value="cerebras" selected>IA: Cerebras (rápida)</option>
             <option value="groq">IA: Groq</option>
-            <option value="cerebras">IA: Cerebras</option>
+            <option value="gemini">IA: Gemini</option>
             <option value="openrouter">IA: OpenRouter</option>
           </select>
           <button onclick="gerarSite()" class="btn btn-gold">Começar com a Mistto</button>
         </span>
       </div>
+
+      <!-- Mais opções (tudo opcional) -->
+      <details class="create-more">
+        <summary>Mais opções <span>— tudo opcional</span></summary>
+        <div class="create-more-body">
+          <!-- endereço escolhido -->
+          <label class="cm-label">Endereço do site</label>
+          <div class="cm-row">
+            <span class="cm-pre">mistto.weblar.app.br/s/?s=</span>
+            <input id="create-slug" type="text" placeholder="meu-cafe" autocomplete="off">
+          </div>
+          <p class="cm-hint">Deixe em branco e a Mistto gera um endereço automático (dá pra mudar depois em Configurações).</p>
+
+          <!-- imagens -->
+          <label class="cm-label">Imagens pra Mistto usar</label>
+          <div id="create-drop" class="create-drop">
+            <span>Arraste imagens aqui ou <b>clique pra escolher</b></span>
+          </div>
+          <input type="file" id="create-imgs" accept="image/*" multiple style="display:none">
+          <div id="create-imgs-list" class="create-imgs-list"></div>
+
+          <!-- html inicial -->
+          <label class="cm-label">Começar de um HTML pronto</label>
+          <textarea id="create-html" rows="3" placeholder="Já tem um HTML? Cole aqui e a Mistto começa a partir dele (em vez de perguntar do zero)."></textarea>
+        </div>
+      </details>
     </div>
 
     <p id="create-status" style="display:none;text-align:center;margin-top:20px;font-weight:500;color:var(--muted)"></p>

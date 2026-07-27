@@ -59,7 +59,18 @@ function checkout(payload){
     }catch(e){ alert('Ops, algo deu errado. Tente de novo.'); }
   });
 }
-function assinar(plano){ checkout({ plano: plano }); }
+/* Assinar: prefere o link recorrente da InfinitePay (débito automático);
+   se o plano não tiver link cadastrado, cai no pagamento avulso. */
+function assinar(plano){
+  loadSupabase(async function(){
+    try{
+      if(!db) db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      var { data } = await db.from('plano_links').select('link').eq('plano', plano).maybeSingle();
+      if(data && data.link){ location.href = data.link; return; }
+    }catch(e){}
+    checkout({ plano: plano });
+  });
+}
 
 /* ---- Estados dos planos (atual / upgrade / downgrade) ---- */
 var ORDEM_PLANOS = ['zefiro','minuano','siroco','boreas'];

@@ -19,22 +19,29 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
   if(!id && !slug){ document.getElementById('load').textContent = 'Site não encontrado.'; return; }
   var filtro = id ? ('id=eq.' + encodeURIComponent(id)) : ('slug=eq.' + encodeURIComponent(slug));
   try{
-    var res = await fetch(SB_URL + '/rest/v1/mistto_sites?' + filtro + '&select=html,expires_at,published', {
+    var res = await fetch(SB_URL + '/rest/v1/mistto_sites?' + filtro + '&select=html,expires_at,published,favicon_url', {
       headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
     });
     var rows = await res.json();
     if(!rows || !rows.length || !rows[0].html){ document.getElementById('load').textContent = 'Site não encontrado.'; return; }
     var row = rows[0];
     var html = row.html;
+    // injeta o favicon escolhido pelo dono (na aba do navegador)
+    if(row.favicon_url){
+      var linkTag = '<link rel="icon" href="' + String(row.favicon_url).replace(/"/g,'&quot;') + '">';
+      if(/<head[^>]*>/i.test(html)){ html = html.replace(/<head[^>]*>/i, function(m){ return m + linkTag; }); }
+      else { html = linkTag + html; }
+    }
     var editMode = !!params.get('edit');
-    // visitante público: respeita "fora do ar" e a expiração do plano grátis (o dono continua vendo no editor)
-    if(!editMode){
+    var thumbMode = !!params.get('thumb');
+    // visitante público: respeita "fora do ar" e a expiração do plano grátis (o dono continua vendo no editor/miniatura)
+    if(!editMode && !thumbMode){
       var expirou = row.expires_at && (new Date(row.expires_at).getTime() - Date.now() <= 0);
       var offline = row.published === false;
       if(expirou || offline){ mostraForaDoAr(expirou); return; }
     }
     document.open(); document.write(html); document.close();
-    if(editMode){ setupSelector(); }
+    if(editMode && !thumbMode){ setupSelector(); }
   }catch(e){ document.getElementById('load').textContent = 'Erro ao carregar.'; }
 })();
 
@@ -48,7 +55,7 @@ function mostraForaDoAr(expirou){
     + '<h1 style="font-size:1.4rem;margin:0 0 10px">Este site está fora do ar</h1>'
     + '<p style="color:#8a99ad;line-height:1.6;margin:0 0 22px">'
     + (expirou
-        ? 'Ele foi criado no plano grátis, que fica 5 dias no ar. O conteúdo está guardado — o dono pode reativá-lo assinando um plano.'
+        ? 'Ele foi criado no plano grátis, que fica 7 dias no ar. O conteúdo está guardado — o dono pode reativá-lo assinando um plano.'
         : 'O dono tirou este site do ar por enquanto.')
     + '</p>'
     + '<a href="https://mistto.weblar.app.br/" style="display:inline-block;background:#EFC03A;color:#251a02;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:12px">Criar meu site na Mistto</a>'
