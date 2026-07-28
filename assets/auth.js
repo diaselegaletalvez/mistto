@@ -1003,13 +1003,48 @@ function edAcao(action, value){
   try{ f.contentWindow.postMessage({ mistto:'act', action: action, value: value }, '*'); }catch(e){}
 }
 
-/* salva o HTML editado direto no banco (sem IA) */
+/* salva o HTML editado direto no banco (sem IA) + guarda no histórico */
 async function edSalvarHtmlDireto(html){
   if(!EDITOR.id || !html) return;
   try{
     await db.from('mistto_sites').update({ html: html }).eq('id', EDITOR.id);
+    try{ await db.from('site_versions').insert({ site_id: EDITOR.id, user_id: EDITOR.meuId, html: html, resumo: 'Edição rápida na prévia', autor: EDITOR.meuNome }); }catch(e){}
     edToast('Alteração salva');
   }catch(e){ edToast('Não consegui salvar a alteração', true); }
+}
+
+/* ---- Histórico do site (ver e restaurar versões) ---- */
+async function edHistorico(){
+  var panel = document.getElementById('ed-hist-panel');
+  var list = document.getElementById('ed-hist-list');
+  if(!panel || !list || !EDITOR.id) return;
+  if(panel.style.display === 'block'){ panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;padding:8px 2px">Carregando…</p>';
+  try{
+    var { data: vs } = await db.from('site_versions').select('id,resumo,autor,created_at').eq('site_id', EDITOR.id).order('created_at', { ascending:false }).limit(40);
+    if(!vs || !vs.length){ list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;padding:8px 2px">Ainda não há histórico. Cada mudança que você fizer aparece aqui.</p>'; return; }
+    var esc = function(x){ return String(x||'').replace(/[<>]/g,''); };
+    list.innerHTML = vs.map(function(v){
+      var quando = v.created_at ? new Date(v.created_at).toLocaleString('pt-BR') : '';
+      return '<div class="ed-hist-item"><div><b>' + (esc(v.resumo) || 'Alteração') + '</b><span>' + quando + (v.autor ? (' · ' + esc(v.autor)) : '') + '</span></div>'
+        + '<button class="btn btn-ghost ed-mini" onclick="edRestaurarVersao(\'' + v.id + '\')">Restaurar</button></div>';
+    }).join('');
+  }catch(e){ list.innerHTML = '<p style="color:#d9534f;font-size:.85rem;padding:8px 2px">Não consegui carregar o histórico.</p>'; }
+}
+function edFecharHistorico(){ var p = document.getElementById('ed-hist-panel'); if(p) p.style.display = 'none'; }
+async function edRestaurarVersao(id){
+  if(!EDITOR.id || !id) return;
+  if(!confirm('Restaurar o site pra esta versão? A versão de agora também fica salva no histórico.')) return;
+  try{
+    var { data: v } = await db.from('site_versions').select('html').eq('id', id).maybeSingle();
+    if(!v || !v.html){ alert('Não achei essa versão.'); return; }
+    await db.from('mistto_sites').update({ html: v.html }).eq('id', EDITOR.id);
+    try{ await db.from('site_versions').insert({ site_id: EDITOR.id, user_id: EDITOR.meuId, html: v.html, resumo: 'Restaurado de uma versão anterior', autor: EDITOR.meuNome }); }catch(e){}
+    edFecharHistorico();
+    edRefresh();
+    edAddMsg('Pronto! Restaurei a versão que você escolheu.', 'ai');
+  }catch(e){ alert('Não consegui restaurar agora.'); }
 }
 
 /* aviso rápido no canto do preview */
@@ -1034,6 +1069,8 @@ async function edSalvar(role, content){
 async function initEditor(){
   var { data: { session } } = await db.auth.getSession();
   if(!session){ location.href = '/login/'; return; }
+  EDITOR.meuId = session.user.id;
+  EDITOR.meuNome = (session.user.user_metadata && (session.user.user_metadata.nome || session.user.user_metadata.full_name)) || (session.user.email || '').split('@')[0];
   var qs = new URLSearchParams(location.search);
 
   var prov = qs.get('prov');

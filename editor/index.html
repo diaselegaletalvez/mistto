@@ -66,9 +66,15 @@
       <div class="ed-dots"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
       <div class="ed-url" id="ed-url">mistto.weblar.app.br/s/…</div>
       <div class="ed-bar-actions">
+        <button class="btn btn-ghost ed-mini" id="ed-hist" onclick="edHistorico()">Histórico</button>
         <button class="btn btn-ghost ed-mini" id="ed-pub" onclick="togglePub()">Publicar</button>
         <a class="btn btn-ghost ed-mini" id="ed-open" href="#" target="_blank" rel="noopener">Abrir</a>
       </div>
+    </div>
+    <!-- painel de histórico (some por padrão) -->
+    <div class="ed-hist-panel" id="ed-hist-panel" style="display:none">
+      <div class="ed-hist-head"><b>Histórico do site</b><span class="x" title="Fechar" onclick="edFecharHistorico()">&times;</span></div>
+      <div class="ed-hist-list" id="ed-hist-list"><p style="color:var(--muted);font-size:.85rem;padding:8px 2px">Carregando…</p></div>
     </div>
     <div class="ed-frame-wrap">
       <div class="ed-hint" id="ed-hint">Dica: clique numa parte do site pra editar só ela</div>
