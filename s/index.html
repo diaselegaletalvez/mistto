@@ -19,19 +19,41 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
   if(!id && !slug){ document.getElementById('load').textContent = 'Site não encontrado.'; return; }
   var filtro = id ? ('id=eq.' + encodeURIComponent(id)) : ('slug=eq.' + encodeURIComponent(slug));
   try{
-    var res = await fetch(SB_URL + '/rest/v1/mistto_sites?' + filtro + '&select=html,expires_at,published,favicon_url', {
+    var res = await fetch(SB_URL + '/rest/v1/mistto_sites?' + filtro + '&select=html,expires_at,published,favicon_url,is_app,app_nome,app_cor', {
       headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
     });
     var rows = await res.json();
     if(!rows || !rows.length || !rows[0].html){ document.getElementById('load').textContent = 'Site não encontrado.'; return; }
     var row = rows[0];
     var html = row.html;
-    // injeta o favicon escolhido pelo dono (na aba do navegador)
-    if(row.favicon_url){
-      var linkTag = '<link rel="icon" href="' + String(row.favicon_url).replace(/"/g,'&quot;') + '">';
-      if(/<head[^>]*>/i.test(html)){ html = html.replace(/<head[^>]*>/i, function(m){ return m + linkTag; }); }
-      else { html = linkTag + html; }
+    var addHead = '';
+    // favicon escolhido pelo dono (na aba do navegador)
+    if(row.favicon_url){ addHead += '<link rel="icon" href="' + String(row.favicon_url).replace(/"/g,'&quot;') + '">'; }
+    // modo APP (PWA): instalável na tela inicial, tela cheia, offline
+    var swReg = '';
+    if(row.is_app && !params.get('edit') && !params.get('thumb')){
+      var icone = row.favicon_url || 'https://mistto.weblar.app.br/favicon.svg';
+      var cor = row.app_cor || '#D4A017';
+      var ehSvg = /\.svg($|\?)/i.test(icone);
+      var manifest = {
+        name: row.app_nome || 'Meu app', short_name: (row.app_nome || 'App').slice(0, 12),
+        start_url: location.pathname + location.search, scope: './',
+        display: 'standalone', background_color: cor, theme_color: cor,
+        icons: [{ src: icone, sizes: ehSvg ? 'any' : '512x512', type: ehSvg ? 'image/svg+xml' : 'image/png', purpose: 'any' }]
+      };
+      addHead += '<link rel="manifest" href="data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest)) + '">'
+        + '<meta name="theme-color" content="' + cor + '">'
+        + '<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">'
+        + '<meta name="apple-mobile-web-app-status-bar-style" content="default">'
+        + '<meta name="apple-mobile-web-app-title" content="' + String(row.app_nome || 'App').replace(/"/g,'&quot;') + '">'
+        + '<link rel="apple-touch-icon" href="' + String(icone).replace(/"/g,'&quot;') + '">';
+      swReg = '<scr' + 'ipt>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/s/sw.js").catch(function(){})})}</scr' + 'ipt>';
     }
+    if(addHead){
+      if(/<head[^>]*>/i.test(html)){ html = html.replace(/<head[^>]*>/i, function(m){ return m + addHead; }); }
+      else { html = addHead + html; }
+    }
+    if(swReg){ html += swReg; }
     var editMode = !!params.get('edit');
     var thumbMode = !!params.get('thumb');
     // visitante público: respeita "fora do ar" e a expiração do plano grátis (o dono continua vendo no editor/miniatura)

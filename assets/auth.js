@@ -201,7 +201,7 @@ async function initPainel(){
 
   // lista os sites do usuário (com ações: ver / tirar do ar / apagar)
   try{
-    var { data: meus } = await db.from('mistto_sites').select('id,nome,prompt,created_at,published,expires_at').eq('user_id', u.id).order('created_at', { ascending:false });
+    var { data: meus } = await db.from('mistto_sites').select('id,nome,prompt,created_at,published,expires_at,is_app,slug').eq('user_id', u.id).order('created_at', { ascending:false });
     var area = document.getElementById('sites-area');
     if(area && meus && meus.length){
       var bs = 'padding:7px 14px;font-size:.82rem';
@@ -223,6 +223,8 @@ async function initPainel(){
           }
         }
         var expirou = s.expires_at && (new Date(s.expires_at).getTime() - Date.now() <= 0);
+        if(s.is_app){ selo += ' <span class="soon" style="background:rgba(212,160,23,.18);color:var(--golddark)">app</span>'; }
+        var appUrlS = s.slug ? ('/s/?s=' + encodeURIComponent(s.slug)) : ('/s/?id=' + s.id);
         h += '<div class="demo-card">'
           + '<div class="demo-thumb live"><iframe loading="lazy" scrolling="no" tabindex="-1" src="/s/?id=' + s.id + '&edit=1&thumb=1"></iframe><span class="thumb-tag">Mistto</span></div>'
           + '<div class="info"><h3>' + titulo + selo + '</h3><p>' + t + '</p>'
@@ -231,6 +233,7 @@ async function initPainel(){
           + '<a class="btn btn-ghost" style="' + bs + '" href="/s/?id=' + s.id + '" target="_blank" rel="noopener">Abrir</a>'
           + '<a class="btn btn-ghost" style="' + bs + '" href="/editor/?id=' + s.id + '">Editar</a>'
           + '<a class="btn btn-ghost" style="' + bs + '" href="/config/?id=' + s.id + '">Configurar</a>'
+          + (s.is_app ? ('<a class="btn btn-ghost" style="' + bs + '" href="' + appUrlS + '" target="_blank" rel="noopener">Instalar app</a>') : '')
           + '</div></div></div>';
       });
       h += '</div>';
@@ -478,7 +481,7 @@ async function initConfig(){
   if(!id){ location.href = '/painel/'; return; }
   CFG.id = id;
   try{
-    var { data: site } = await db.from('mistto_sites').select('id,nome,slug,published,favicon_url,user_id').eq('id', id).maybeSingle();
+    var { data: site } = await db.from('mistto_sites').select('id,nome,slug,published,favicon_url,is_app,app_nome,app_cor,user_id').eq('id', id).maybeSingle();
     if(!site || site.user_id !== session.user.id){
       document.getElementById('cfg-load').textContent = 'Não encontrei esse site na sua conta.';
       return;
@@ -488,6 +491,7 @@ async function initConfig(){
     document.getElementById('cfg-slug').value = site.slug || '';
     cfgMostraFavicon(site.favicon_url);
     cfgPreview(); cfgStatus();
+    initConfigApp(session.user.id, site);
     var open = document.getElementById('cfg-open'); if(open) open.href = '/s/?id=' + id;
     var edit = document.getElementById('cfg-edit'); if(edit) edit.href = '/editor/?id=' + id;
     document.getElementById('cfg-load').style.display = 'none';
@@ -605,6 +609,54 @@ async function salvarSlug(){
     CFG.slug = s;
     cfgMsg('cfg-slug-msg', 'Endereço salvo! Seu site abre no link acima.', true);
   }catch(e){ cfgMsg('cfg-slug-msg', 'Erro ao salvar.', false); }
+}
+
+/* ---- Transformar em app (PWA) — Siroco/Bóreas ---- */
+async function initConfigApp(userId, site){
+  // descobre o plano
+  var plano = 'zefiro';
+  try{
+    var { data: sub } = await db.from('subscriptions').select('plano,status,valid_until').eq('user_id', userId).maybeSingle();
+    if(sub && sub.status === 'active' && sub.valid_until && new Date(sub.valid_until) > new Date()) plano = sub.plano;
+  }catch(e){}
+  var podeApp = (plano === 'siroco' || plano === 'boreas');
+  document.getElementById('cfg-app-locked').style.display = podeApp ? 'none' : 'block';
+  document.getElementById('cfg-app-on').style.display = podeApp ? 'block' : 'none';
+  if(!podeApp) return;
+  var tog = document.getElementById('cfg-app-toggle');
+  tog.checked = site.is_app === true;
+  document.getElementById('cfg-app-nome').value = site.app_nome || site.nome || '';
+  document.getElementById('cfg-app-cor').value = site.app_cor || '#D4A017';
+  appToggle();
+  if(site.is_app) appMostraInstall();
+}
+function appToggle(){
+  var on = document.getElementById('cfg-app-toggle').checked;
+  document.getElementById('cfg-app-fields').style.display = on ? 'block' : 'none';
+}
+function appUrl(){
+  var base = 'https://mistto.weblar.app.br/s/';
+  return CFG.slug ? (base + '?s=' + encodeURIComponent(CFG.slug)) : (base + '?id=' + CFG.id);
+}
+function appMostraInstall(){
+  var box = document.getElementById('cfg-app-install'); if(!box) return;
+  var url = appUrl();
+  var qr = document.getElementById('cfg-app-qr');
+  if(qr) qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=8&data=' + encodeURIComponent(url);
+  var lk = document.getElementById('cfg-app-link'); if(lk) lk.href = url;
+  box.style.display = 'block';
+}
+async function salvarApp(){
+  if(!CFG.id) return;
+  var on = document.getElementById('cfg-app-toggle').checked;
+  var nome = document.getElementById('cfg-app-nome').value.trim();
+  var cor = document.getElementById('cfg-app-cor').value || '#D4A017';
+  try{
+    var { error } = await db.from('mistto_sites').update({ is_app: on, app_nome: nome || null, app_cor: cor }).eq('id', CFG.id);
+    if(error){ cfgMsg('cfg-app-msg', 'Não consegui salvar agora.', false); return; }
+    if(on){ appMostraInstall(); cfgMsg('cfg-app-msg', 'App ativado! Abra o link/QR pra instalar.', true); }
+    else { document.getElementById('cfg-app-install').style.display = 'none'; cfgMsg('cfg-app-msg', 'Modo app desligado.', true); }
+  }catch(e){ cfgMsg('cfg-app-msg', 'Erro ao salvar.', false); }
 }
 
 /* ---- Favicon do site (aparece na aba do navegador) ---- */

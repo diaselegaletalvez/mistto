@@ -69,6 +69,36 @@
         <div id="cfg-fav-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>
       </div>
 
+      <!-- TRANSFORMAR EM APP -->
+      <div class="stat" id="cfg-app-box" style="margin-bottom:18px">
+        <div class="lbl">Transformar em app <span style="font-size:.7rem;color:var(--golddark);background:rgba(212,160,23,.14);padding:2px 8px;border-radius:999px;margin-left:6px">Siroco/Bóreas</span></div>
+        <div id="cfg-app-locked" style="display:none">
+          <p style="color:var(--muted);font-size:.9rem;margin:8px 0 12px">Vire seu site num <b>app instalável</b> — ícone na tela inicial, tela cheia e funciona offline. Disponível nos planos Siroco e Bóreas.</p>
+          <a href="/precos/" class="btn btn-gold" style="padding:9px 18px">Ver planos</a>
+        </div>
+        <div id="cfg-app-on" style="display:none">
+          <p style="color:var(--muted);font-size:.9rem;margin:8px 0 10px">Vira um app instalável no celular e no computador. O ícone é o favicon (defina acima).</p>
+          <label style="display:flex;align-items:center;gap:9px;margin-bottom:12px;cursor:pointer;font-size:.95rem"><input type="checkbox" id="cfg-app-toggle" onchange="appToggle()"> Este site é um app</label>
+          <div id="cfg-app-fields" style="display:none">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+              <input id="cfg-app-nome" type="text" placeholder="Nome do app" style="flex:1;min-width:180px;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:11px 14px;font-family:'Inter';font-size:1rem;color:var(--ink);outline:none">
+              <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--muted)">Cor <input type="color" id="cfg-app-cor" value="#D4A017" style="width:34px;height:34px;border:1.5px solid var(--line);border-radius:8px;background:none;cursor:pointer"></label>
+              <button class="btn btn-gold" onclick="salvarApp()">Salvar app</button>
+            </div>
+            <div id="cfg-app-install" style="display:none;border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:6px">
+              <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+                <img id="cfg-app-qr" alt="QR do app" width="150" height="150" style="border-radius:10px;background:#fff;border:1px solid var(--line)">
+                <div style="flex:1;min-width:200px">
+                  <b style="font-size:.95rem">Testar e instalar</b>
+                  <p style="color:var(--muted);font-size:.85rem;margin:6px 0">Aponte a câmera do celular pro QR, ou <a id="cfg-app-link" href="#" target="_blank" rel="noopener" style="color:var(--golddark);font-weight:600">abra o app</a>. No <b>Android/Chrome</b> aparece "Instalar app"; no <b>iPhone</b>, toque em Compartilhar → "Adicionar à Tela de Início".</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="cfg-app-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>
+        </div>
+      </div>
+
       <!-- STATUS -->
       <div class="stat" style="margin-bottom:18px">
         <div class="lbl">Status</div>
