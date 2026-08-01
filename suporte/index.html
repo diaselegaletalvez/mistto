@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suporte — Mistto</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#FAF4E8;--card:#fff;--ink:#2A2118;--muted:#8a7f6f;--gold:#D4A017;--golddark:#B5860F;--line:#E7DBC4}
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,var(--cream),#fff 60%);color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:1.7}
+  .wrap{max-width:760px;margin:0 auto;padding:0 22px}
+  h1,h2,.logo{font-family:'Fraunces',serif}
+  .logo{font-size:1.5rem;font-weight:700}.logo b{color:var(--gold)}
+  a{color:var(--golddark)}
+  header{text-align:center;padding:54px 0 22px;border-bottom:1px solid var(--line)}
+  header h1{font-size:2.1rem;margin:14px 0 4px}
+  header p{color:var(--muted);margin:0}
+  main{padding:20px 0 60px}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 6px 18px rgba(90,66,10,.06)}
+  .card h3{font-family:'Fraunces';margin:0 0 6px;font-size:1.15rem}
+  .card p{color:var(--muted);margin:0 0 14px;font-size:.92rem}
+  .btn{display:inline-block;background:var(--gold);color:#251a02;font-weight:700;border-radius:999px;padding:10px 18px;text-decoration:none;font-size:.9rem}
+  .btn.ghost{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+  h2{font-size:1.25rem;margin:32px 0 8px}
+  .q{font-weight:600;margin:16px 0 2px}
+  .a{color:var(--muted);margin:0}
+  footer{border-top:1px solid var(--line);padding:26px 0;text-align:center;color:var(--muted);font-size:.85rem}
+  @media(max-width:560px){.cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Mis<b>tto</b></div>
+  <h1>Suporte</h1>
+  <p>Precisa de ajuda? A gente te responde.</p>
+</header>
+<main class="wrap">
+  <div class="cards">
+    <div class="card">
+      <h3>Assistente de IA</h3>
+      <p>A forma mais rápida: converse com a Mistto direto no app ou no site. Ela ajuda a criar, ajustar e tirar dúvidas na hora.</p>
+      <a class="btn" href="https://mistto.weblar.app.br/painel/">Abrir o assistente</a>
+    </div>
+    <div class="card">
+      <h3>E-mail</h3>
+      <p>Prefere falar com uma pessoa? Escreva pra gente e respondemos assim que possível.</p>
+      <a class="btn ghost" href="mailto:suporte@weblar.app.br">suporte@weblar.app.br</a>
+    </div>
+  </div>
+
+  <h2>Perguntas frequentes</h2>
+
+  <p class="q">Como eu crio um site?</p>
+  <p class="a">Toque em Criar, descreva o que você quer (ex.: "um site para minha cafeteria") e a IA monta pra você em segundos.</p>
+
+  <p class="q">Posso editar depois?</p>
+  <p class="a">Sim. Você edita conversando no chat ou clicando direto nos elementos. Também dá pra ligar o Modo Discussão pra pedir ideias sem alterar o site.</p>
+
+  <p class="q">O que são tokens e WeCoins?</p>
+  <p class="a">Tokens são o que você gasta pra criar (100) e ajustar (15). Todo plano vem com tokens por mês. WeCoins recarregam tokens avulsos: 1 WeCoin = 500 tokens.</p>
+
+  <p class="q">É a mesma conta do Weblar?</p>
+  <p class="a">Sim, sua conta vale no Mistto e no Weblar.</p>
+
+  <p class="q">Como excluo minha conta ou meus dados?</p>
+  <p class="a">Pelas configurações da conta, ou escrevendo para suporte@weblar.app.br. Veja também nossa <a href="/privacidade/">Política de Privacidade</a>.</p>
+</main>
+<footer>Mistto — família <b style="color:var(--golddark)">Weblar</b> · <a href="/privacidade/">Privacidade</a></footer>
+</body>
+</html>
