@@ -1368,7 +1368,47 @@ async function enviarEdicao(){
   edLimpaAnexo();
   edLimpaSelecao();
   ta.value = ''; ta.style.height = 'auto';
+  if(EDITOR.discussao){ edDiscutir(conteudo); return; }
   aplicarEdicao(conteudo, false);
+}
+
+/* Modo Discussão: a Mistto conversa/opina sem mexer no site */
+function edToggleDiscussao(){
+  EDITOR.discussao = !EDITOR.discussao;
+  var b = document.getElementById('ed-modo');
+  var ta = document.getElementById('ed-prompt');
+  if(EDITOR.discussao){
+    if(b){ b.textContent = 'Discussão'; b.style.background = '#D4A017'; b.style.borderColor = '#D4A017'; b.style.color = '#251a02'; }
+    if(ta) ta.placeholder = 'Modo discussão: converse, peça ideias e opiniões…';
+    edAddMsg('Modo discussão ligado — vamos conversar sobre o site. Não vou editar até você desligar (ou dizer "pode aplicar").', 'ai');
+  } else {
+    if(b){ b.textContent = 'Editar'; b.style.background = '#fff'; b.style.borderColor = '#E7DBC4'; b.style.color = '#2A2118'; }
+    if(ta) ta.placeholder = 'Escreva uma mensagem…';
+    edAddMsg('Modo edição ligado — agora aplico as mudanças que você pedir.', 'ai');
+  }
+}
+
+async function edDiscutir(instr){
+  if(EDITOR.gerando || !EDITOR.id){ return; }
+  var pensando = edPensando();
+  edBusy(true);
+  EDITOR.abort = new AbortController();
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    if(!session){ location.href = '/login/'; return; }
+    var res = await fetch(SUPABASE_URL + '/functions/v1/gerar-site', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
+      body: JSON.stringify({ discutir:true, site_id: EDITOR.id, prompt: instr, provider: EDITOR.provider, access_token: session.access_token }),
+      signal: EDITOR.abort.signal
+    });
+    var data = await res.json();
+    var txt = data.resposta || (data.error ? traduzGerar(data, res.status) : 'Não consegui responder agora.');
+    if(pensando){ pensando.innerHTML = '<span class="who">Mistto</span>' + escapeHtml(txt); edTools(pensando, txt, false); }
+    edSalvar('assistant', txt);
+  }catch(e){
+    if(pensando){ pensando.innerHTML = '<span class="who">Mistto</span>Não consegui responder agora.'; }
+  }finally{ edBusy(false); }
 }
 
 /* aplica uma instrução de edição (usada no envio normal e no "Regenerar") */
