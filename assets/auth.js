@@ -645,6 +645,28 @@ function appMostraInstall(){
   if(qr) qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=8&data=' + encodeURIComponent(url);
   var lk = document.getElementById('cfg-app-link'); if(lk) lk.href = url;
   box.style.display = 'block';
+  var push = document.getElementById('cfg-push'); if(push) push.style.display = 'block';
+}
+function pushMsg(t, ok){ var m = document.getElementById('push-msg'); if(m){ m.style.color = ok ? 'var(--green)' : '#d9534f'; m.textContent = t || ''; } }
+async function enviarPush(){
+  if(!CFG.id) return;
+  var titulo = (document.getElementById('push-titulo') || {}).value || '';
+  var corpo = (document.getElementById('push-corpo') || {}).value || '';
+  if(!titulo.trim()){ pushMsg('Escreva um título.', false); return; }
+  try{
+    var { data: { session } } = await db.auth.getSession();
+    if(!session){ location.href = '/login/'; return; }
+    pushMsg('Enviando…', true);
+    var res = await fetch(SUPABASE_URL + '/functions/v1/push', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + session.access_token },
+      body: JSON.stringify({ action:'enviar', site_id: CFG.id, titulo: titulo, corpo: corpo, url: appUrl(), access_token: session.access_token })
+    });
+    var d = await res.json().catch(function(){ return {}; });
+    if(!res.ok || d.error){ pushMsg((d && d.msg) || 'Não consegui enviar agora. (Configurou as chaves VAPID?)', false); return; }
+    pushMsg('Enviado pra ' + (d.enviados || 0) + ' aparelho(s).', true);
+    document.getElementById('push-titulo').value = ''; document.getElementById('push-corpo').value = '';
+  }catch(e){ pushMsg('Erro ao enviar.', false); }
 }
 async function salvarApp(){
   if(!CFG.id) return;
@@ -1085,6 +1107,29 @@ async function edHistorico(){
   }catch(e){ list.innerHTML = '<p style="color:#d9534f;font-size:.85rem;padding:8px 2px">Não consegui carregar o histórico.</p>'; }
 }
 function edFecharHistorico(){ var p = document.getElementById('ed-hist-panel'); if(p) p.style.display = 'none'; }
+
+/* alternar prévia computador/celular */
+function edVer(m){
+  var w = document.querySelector('.ed-frame-wrap'); if(!w) return;
+  if(m === 'cel') w.classList.add('cel'); else w.classList.remove('cel');
+  var a = document.getElementById('edv-full'), b = document.getElementById('edv-cel');
+  if(a) a.classList.toggle('on', m !== 'cel');
+  if(b) b.classList.toggle('on', m === 'cel');
+}
+
+/* desfazer: restaura a versão anterior (1 clique) */
+async function edDesfazer(){
+  if(!EDITOR.id) return;
+  try{
+    var { data: vs } = await db.from('site_versions').select('id,html').eq('site_id', EDITOR.id).order('created_at', { ascending:false }).limit(2);
+    if(!vs || vs.length < 2){ edToast('Nada pra desfazer ainda', true); return; }
+    var anterior = vs[1];
+    await db.from('mistto_sites').update({ html: anterior.html }).eq('id', EDITOR.id);
+    try{ await db.from('site_versions').insert({ site_id: EDITOR.id, user_id: EDITOR.meuId, html: anterior.html, resumo: 'Desfez a última mudança', autor: EDITOR.meuNome }); }catch(e){}
+    edRefresh();
+    edToast('Desfeito');
+  }catch(e){ edToast('Não consegui desfazer agora', true); }
+}
 async function edRestaurarVersao(id){
   if(!EDITOR.id || !id) return;
   if(!confirm('Restaurar o site pra esta versão? A versão de agora também fica salva no histórico.')) return;

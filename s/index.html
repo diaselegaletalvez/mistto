@@ -19,7 +19,7 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
   if(!id && !slug){ document.getElementById('load').textContent = 'Site não encontrado.'; return; }
   var filtro = id ? ('id=eq.' + encodeURIComponent(id)) : ('slug=eq.' + encodeURIComponent(slug));
   try{
-    var res = await fetch(SB_URL + '/rest/v1/mistto_sites?' + filtro + '&select=html,expires_at,published,favicon_url,is_app,app_nome,app_cor', {
+    var res = await fetch(SB_URL + '/rest/v1/mistto_sites?' + filtro + '&select=id,html,expires_at,published,favicon_url,is_app,app_nome,app_cor', {
       headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
     });
     var rows = await res.json();
@@ -47,7 +47,8 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
         + '<meta name="apple-mobile-web-app-status-bar-style" content="default">'
         + '<meta name="apple-mobile-web-app-title" content="' + String(row.app_nome || 'App').replace(/"/g,'&quot;') + '">'
         + '<link rel="apple-touch-icon" href="' + String(icone).replace(/"/g,'&quot;') + '">';
-      swReg = '<scr' + 'ipt>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/s/sw.js").catch(function(){})})}</scr' + 'ipt>';
+      swReg = '<scr' + 'ipt>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/s/sw.js").catch(function(){})})}</scr' + 'ipt>'
+        + '<scr' + 'ipt src="/s/app.js" data-site="' + (row.id || '') + '"></scr' + 'ipt>';
     }
     if(addHead){
       if(/<head[^>]*>/i.test(html)){ html = html.replace(/<head[^>]*>/i, function(m){ return m + addHead; }); }
@@ -134,6 +135,7 @@ function setupSelector(){
     var d = ev.data; if(!d || d.mistto !== 'act' || !sel) return;
     var a = d.action;
     if(a === 'apagar'){ var p = sel; sel = null; p.classList.remove(HL); p.parentNode && p.parentNode.removeChild(p); try{ parent.postMessage({ mistto:'cleared' }, '*'); }catch(_){}; salvar(); return; }
+    if(a === 'duplicar'){ var cl = sel.cloneNode(true); cl.classList && cl.classList.remove(HL); if(sel.parentNode) sel.parentNode.insertBefore(cl, sel.nextSibling); salvar(); return; }
     if(a === 'cima'){ var pv = sel.previousElementSibling; if(pv) sel.parentNode.insertBefore(sel, pv); salvar(); return; }
     if(a === 'baixo'){ var nx = sel.nextElementSibling; if(nx) sel.parentNode.insertBefore(nx, sel); salvar(); return; }
     if(a === 'cor'){ sel.style.color = d.value; salvar(); return; }

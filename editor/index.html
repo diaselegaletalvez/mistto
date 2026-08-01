@@ -35,6 +35,7 @@
           <button type="button" class="ed-acao" onclick="edAcao('cantos','14px')" title="Arredondar cantos">Cantos</button>
           <button type="button" class="ed-acao" onclick="edAcao('cima')" title="Mover pra cima">↑</button>
           <button type="button" class="ed-acao" onclick="edAcao('baixo')" title="Mover pra baixo">↓</button>
+          <button type="button" class="ed-acao" onclick="edAcao('duplicar')" title="Duplicar">Duplicar</button>
           <button type="button" class="ed-acao ed-acao-del" onclick="edAcao('apagar')" title="Apagar">Apagar</button>
         </div>
         <div id="ed-anexo" class="ed-anexo" style="display:none"></div>
@@ -66,6 +67,11 @@
       <div class="ed-dots"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
       <div class="ed-url" id="ed-url">mistto.weblar.app.br/s/…</div>
       <div class="ed-bar-actions">
+        <span class="ed-view">
+          <button id="edv-full" class="on" onclick="edVer('full')" title="Computador" aria-label="Computador"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button>
+          <button id="edv-cel" onclick="edVer('cel')" title="Celular" aria-label="Celular"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg></button>
+        </span>
+        <button class="btn btn-ghost ed-mini" id="ed-undo" onclick="edDesfazer()">Desfazer</button>
         <button class="btn btn-ghost ed-mini" id="ed-hist" onclick="edHistorico()">Histórico</button>
         <button class="btn btn-ghost ed-mini" id="ed-pub" onclick="togglePub()">Publicar</button>
         <a class="btn btn-ghost ed-mini" id="ed-open" href="#" target="_blank" rel="noopener">Abrir</a>

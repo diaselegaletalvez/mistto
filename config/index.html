@@ -94,6 +94,15 @@
                 </div>
               </div>
             </div>
+            <!-- Enviar notificação push -->
+            <div id="cfg-push" style="display:none;border-top:1px solid var(--line);margin-top:14px;padding-top:14px">
+              <b style="font-size:.92rem">Enviar uma notificação</b>
+              <p style="color:var(--muted);font-size:.82rem;margin:4px 0 10px">Chega em todo mundo que instalou o app e ativou os avisos.</p>
+              <input id="push-titulo" type="text" placeholder="Título" style="width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px 14px;font-family:'Inter';font-size:.95rem;color:var(--ink);outline:none;margin-bottom:8px">
+              <input id="push-corpo" type="text" placeholder="Mensagem" style="width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px 14px;font-family:'Inter';font-size:.95rem;color:var(--ink);outline:none;margin-bottom:10px">
+              <button class="btn btn-gold" onclick="enviarPush()">Enviar notificação</button>
+              <div id="push-msg" style="font-size:.83rem;margin-top:8px;min-height:16px"></div>
+            </div>
           </div>
           <div id="cfg-app-msg" style="font-size:.85rem;margin-top:8px;min-height:18px"></div>
         </div>
